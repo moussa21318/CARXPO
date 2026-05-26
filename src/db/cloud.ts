@@ -106,6 +106,14 @@ export async function deleteCar(id: string): Promise<void> {
 }
 
 // --- Fees ---
+export async function getAllCarFees(): Promise<CarFees[]> {
+  try {
+    const { data, error } = await getClient().from('car_fees').select('*')
+    if (error) return []
+    return (data as CarFees[]) || []
+  } catch { return [] }
+}
+
 export async function getCarFees(carId: string): Promise<CarFees | null> {
   try {
     const { data, error } = await getClient().from('car_fees').select('*').eq('car_id', carId).maybeSingle()
@@ -143,6 +151,14 @@ export async function moveToStage(carId: string, stage: CarStage, evidenceUrl: s
 }
 
 // --- Request Clients ---
+export async function getAllRequestClients(): Promise<RequestClient[]> {
+  try {
+    const { data, error } = await getClient().from('request_clients').select('*')
+    if (error) return []
+    return (data as RequestClient[]) || []
+  } catch { return [] }
+}
+
 export async function getRequestClient(carId: string): Promise<RequestClient | null> {
   try {
     const { data, error } = await getClient().from('request_clients').select('*').eq('car_id', carId).maybeSingle()
@@ -158,6 +174,14 @@ export async function upsertRequestClient(payload: Partial<RequestClient>): Prom
 }
 
 // --- Customers ---
+export async function getCustomers(): Promise<Customer[]> {
+  try {
+    const { data, error } = await getClient().from('customers').select('*').order('created_at', { ascending: false })
+    if (error) return []
+    return (data as Customer[]) || []
+  } catch { return [] }
+}
+
 export async function getCustomer(carId: string): Promise<Customer | null> {
   try {
     const { data, error } = await getClient().from('customers').select('*').eq('car_id', carId).maybeSingle()

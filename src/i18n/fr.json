@@ -9,7 +9,8 @@
     "back": "Retour",
     "confirm": "Confirmer",
     "search": "Rechercher...",
-    "no_data": "Aucune donnée"
+    "no_data": "Aucune donnée",
+    "details": "Détails"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -17,7 +18,7 @@
     "users": "Utilisateurs",
     "notifications": "Notifications",
     "activity_log": "Journal d'activité",
-    "import": "Importer",
+    "export": "Exporter Excel",
     "logout": "Déconnexion"
   },
   "auth": {
@@ -25,7 +26,8 @@
     "username": "Nom d'utilisateur",
     "password": "Mot de passe",
     "error": "Erreur de connexion",
-    "welcome": "Bonjour {{name}}"
+    "welcome": "Bonjour {{name}}",
+    "no_permission": "Vous n'avez pas la permission"
   },
   "stages": {
     "request": "Commande",
@@ -79,7 +81,9 @@
     "email": "Email",
     "filter_stage": "Filtrer par étape",
     "all_stages": "Toutes les étapes",
-    "images": "Images"
+    "images": "Images",
+    "info": "Infos voiture",
+    "deposit": "Acompte"
   },
   "users": {
     "title": "Gestion des utilisateurs",
@@ -110,20 +114,27 @@
     "operation": "Opération",
     "user": "Utilisateur",
     "timestamp": "Date",
-    "no_logs": "Aucune activité"
+    "no_logs": "Aucune activité",
+    "insert": "Ajout",
+    "update": "Modification",
+    "delete": "Suppression"
   },
-  "import": {
-    "title": "Importer des données",
-    "upload": "Charger un fichier Excel",
+  "export": {
+    "title": "Exporter Excel",
     "select_table": "Choisir la table",
     "cars": "Voitures",
     "customers": "Clients",
-    "column_mapping": "Correspondance des colonnes",
+    "columns": "Sélectionner et ordonner les colonnes",
+    "load": "Charger les données",
+    "load_hint": "Cliquez sur Charger pour afficher les données",
     "preview": "Aperçu",
-    "import_btn": "Importer",
-    "success": "{{count}} enregistrement(s) importé(s) avec succès",
-    "error": "Échec de l'importation",
-    "drop_hint": "Déposez le fichier ici ou cliquez pour sélectionner"
+    "records": "enregistrement(s)",
+    "download": "Télécharger Excel",
+    "error": "Échec de l'exportation",
+    "group_car": "Voiture",
+    "group_rc": "Demandeur",
+    "group_cust": "Client final",
+    "group_fees": "Frais"
   },
   "dashboard": {
     "title": "Tableau de bord",

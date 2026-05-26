@@ -9,7 +9,8 @@
     "back": "Back",
     "confirm": "Confirm",
     "search": "Search...",
-    "no_data": "No data"
+    "no_data": "No data",
+    "details": "Details"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -17,7 +18,7 @@
     "users": "Users",
     "notifications": "Notifications",
     "activity_log": "Activity Log",
-    "import": "Import",
+    "export": "Export Excel",
     "logout": "Logout"
   },
   "auth": {
@@ -25,7 +26,8 @@
     "username": "Username",
     "password": "Password",
     "error": "Login error",
-    "welcome": "Welcome {{name}}"
+    "welcome": "Welcome {{name}}",
+    "no_permission": "You do not have permission"
   },
   "stages": {
     "request": "Order",
@@ -79,7 +81,9 @@
     "email": "Email",
     "filter_stage": "Filter by Stage",
     "all_stages": "All Stages",
-    "images": "Images"
+    "images": "Images",
+    "info": "Car Info",
+    "deposit": "Deposit"
   },
   "users": {
     "title": "User Management",
@@ -110,20 +114,27 @@
     "operation": "Operation",
     "user": "User",
     "timestamp": "Timestamp",
-    "no_logs": "No activities"
+    "no_logs": "No activities",
+    "insert": "Insert",
+    "update": "Update",
+    "delete": "Delete"
   },
-  "import": {
-    "title": "Import Data",
-    "upload": "Upload Excel File",
+  "export": {
+    "title": "Export Excel",
     "select_table": "Select Table",
     "cars": "Cars",
     "customers": "Customers",
-    "column_mapping": "Column Mapping",
+    "columns": "Select & Order Columns",
+    "load": "Load Data",
+    "load_hint": "Click Load Data to display records",
     "preview": "Preview",
-    "import_btn": "Import",
-    "success": "{{count}} record(s) imported successfully",
-    "error": "Import failed",
-    "drop_hint": "Drop file here or click to select"
+    "records": "record(s)",
+    "download": "Download Excel",
+    "error": "Export failed",
+    "group_car": "Car",
+    "group_rc": "Request Client",
+    "group_cust": "Customer",
+    "group_fees": "Fees"
   },
   "dashboard": {
     "title": "Dashboard",

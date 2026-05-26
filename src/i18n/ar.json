@@ -9,7 +9,8 @@
     "back": "رجوع",
     "confirm": "تأكيد",
     "search": "بحث...",
-    "no_data": "لا توجد بيانات"
+    "no_data": "لا توجد بيانات",
+    "details": "تفاصيل"
   },
   "nav": {
     "dashboard": "لوحة القيادة",
@@ -17,7 +18,7 @@
     "users": "المستخدمين",
     "notifications": "الإشعارات",
     "activity_log": "سجل النشاطات",
-    "import": "استيراد بيانات",
+    "export": "تصدير Excel",
     "logout": "تسجيل خروج"
   },
   "auth": {
@@ -25,7 +26,8 @@
     "username": "اسم المستخدم",
     "password": "كلمة المرور",
     "error": "خطأ في تسجيل الدخول",
-    "welcome": "مرحبًا {{name}}"
+    "welcome": "مرحبًا {{name}}",
+    "no_permission": "ليس لديك صلاحية"
   },
   "stages": {
     "request": "طلب",
@@ -79,7 +81,9 @@
     "email": "البريد الإلكتروني",
     "filter_stage": "تصفية بالمرحلة",
     "all_stages": "جميع المراحل",
-    "images": "الصور"
+    "images": "الصور",
+    "info": "معلومات السيارة",
+    "deposit": "العربون"
   },
   "users": {
     "title": "إدارة المستخدمين",
@@ -110,20 +114,27 @@
     "operation": "العملية",
     "user": "المستخدم",
     "timestamp": "التاريخ",
-    "no_logs": "لا توجد نشاطات"
+    "no_logs": "لا توجد نشاطات",
+    "insert": "إضافة",
+    "update": "تعديل",
+    "delete": "حذف"
   },
-  "import": {
-    "title": "استيراد بيانات",
-    "upload": "رفع ملف Excel",
+  "export": {
+    "title": "تصدير Excel",
     "select_table": "اختر الجدول",
     "cars": "سيارات",
     "customers": "زبائن",
-    "column_mapping": "تطابق الأعمدة",
+    "columns": "اختيار وترتيب الأعمدة",
+    "load": "تحميل البيانات",
+    "load_hint": "اضغط على تحميل البيانات لعرضها",
     "preview": "معاينة",
-    "import_btn": "استيراد",
-    "success": "تم استيراد {{count}} سجل بنجاح",
-    "error": "فشل الاستيراد",
-    "drop_hint": "أسقط الملف هنا أو انقر للاختيار"
+    "records": "سجل",
+    "download": "تحميل Excel",
+    "error": "فشل التصدير",
+    "group_car": "السيارة",
+    "group_rc": "صاحب الطلبية",
+    "group_cust": "الزبون النهائي",
+    "group_fees": "المصاريف"
   },
   "dashboard": {
     "title": "لوحة القيادة",
