@@ -36,6 +36,7 @@ export interface CarFees {
   id: string
   car_id: string
   deposit: number
+  deposit_02: number
   transport_01: number
   parking: number
   other_fees: number
@@ -119,4 +120,4 @@ export const STAGE_ORDER: CarStage[] = ['request', 'deposit', 'purchase', 'shipp
 
 export const MODEL_YEARS = [2026, 2025, 2024, 2023, 2022, 2021]
 
-export const FEE_LABELS: (keyof CarFees)[] = ['deposit', 'transport_01', 'parking', 'other_fees', 'transport_02']
+export const FEE_LABELS: (keyof CarFees)[] = ['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02']

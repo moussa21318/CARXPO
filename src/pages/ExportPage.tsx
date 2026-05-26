@@ -40,6 +40,7 @@ const GROUPS: ColumnDef[] = [
 
   // Fees
   { key: 'deposit', labelKey: 'car.deposit', group: 'fees', groupLabelKey: 'export.group_fees', getValue: (_, __, ___, fees) => fees?.deposit },
+  { key: 'deposit_02', labelKey: 'car.deposit_02', group: 'fees', groupLabelKey: 'export.group_fees', getValue: (_, __, ___, fees) => fees?.deposit_02 },
   { key: 'transport_01', labelKey: 'car.transport_01', group: 'fees', groupLabelKey: 'export.group_fees', getValue: (_, __, ___, fees) => fees?.transport_01 },
   { key: 'parking', labelKey: 'car.parking', group: 'fees', groupLabelKey: 'export.group_fees', getValue: (_, __, ___, fees) => fees?.parking },
   { key: 'other_fees', labelKey: 'car.other_fees', group: 'fees', groupLabelKey: 'export.group_fees', getValue: (_, __, ___, fees) => fees?.other_fees },
@@ -84,6 +85,20 @@ export default function ExportPage() {
 
   const toggleColumn = (key: string) => {
     setSelected(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+  }
+
+  const allKeys = GROUPS.map(c => c.key)
+
+  const selectAll = () => setSelected([...allKeys])
+  const deselectAll = () => setSelected([])
+
+  const selectGroup = (g: string) => {
+    const keys = GROUPS.filter(c => c.group === g).map(c => c.key)
+    setSelected(prev => [...new Set([...prev, ...keys])])
+  }
+  const deselectGroup = (g: string) => {
+    const keys = GROUPS.filter(c => c.group === g).map(c => c.key)
+    setSelected(prev => prev.filter(k => !keys.includes(k)))
   }
 
   const moveUp = (key: string) => {
@@ -147,14 +162,26 @@ export default function ExportPage() {
           </div>
 
           <div>
-            <h3 className="font-medium mb-3">{t('export.columns')}</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium">{t('export.columns')}</h3>
+              <div className="flex gap-2">
+                <button onClick={selectAll} className="text-xs px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">{t('export.select_all')}</button>
+                <button onClick={deselectAll} className="text-xs px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">{t('export.deselect_all')}</button>
+              </div>
+            </div>
             <div className="space-y-4 max-h-96 overflow-y-auto border rounded-lg p-4">
               {UNIQUE_GROUPS.map(g => {
                 const groupCols = GROUPS.filter(c => c.group === g)
                 const labelKey = groupCols[0]?.groupLabelKey || ''
                 return (
                   <div key={g}>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2 border-b pb-1">{t(labelKey)}</h4>
+                    <div className="flex items-center justify-between border-b pb-1 mb-2">
+                      <h4 className="text-sm font-semibold text-gray-700">{t(labelKey)}</h4>
+                      <div className="flex gap-2">
+                        <button onClick={() => selectGroup(g)} className="text-xs text-blue-600 hover:underline">{t('export.select_all')}</button>
+                        <button onClick={() => deselectGroup(g)} className="text-xs text-gray-500 hover:underline">{t('export.deselect_all')}</button>
+                      </div>
+                    </div>
                     <div className="space-y-1">
                       {order.filter(k => groupCols.some(c => c.key === k)).map(key => {
                         const col = groupCols.find(c => c.key === key)

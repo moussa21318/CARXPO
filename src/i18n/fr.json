@@ -83,7 +83,9 @@
     "all_stages": "Toutes les étapes",
     "images": "Images",
     "info": "Infos voiture",
-    "deposit": "Acompte"
+    "deposit": "Acompte",
+    "deposit_02": "2e versement",
+    "deposit_02_required": "Saisir le 2e versement avant de passer à la préparation"
   },
   "users": {
     "title": "Gestion des utilisateurs",
@@ -125,6 +127,8 @@
     "cars": "Voitures",
     "customers": "Clients",
     "columns": "Sélectionner et ordonner les colonnes",
+    "select_all": "☑ Tous",
+    "deselect_all": "☐ Aucun",
     "load": "Charger les données",
     "load_hint": "Cliquez sur Charger pour afficher les données",
     "preview": "Aperçu",

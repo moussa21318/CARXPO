@@ -65,6 +65,7 @@ export default function CarDetails() {
 
   const stageIndex = STAGE_ORDER.indexOf(car.current_stage)
   const nextStage = stageIndex < STAGE_ORDER.length - 1 ? STAGE_ORDER[stageIndex + 1] : null
+  const blockedToShipping = nextStage === 'shipping_prep' && !(fees && fees.deposit_02 > 0)
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -101,11 +102,16 @@ export default function CarDetails() {
           </div>
         )}
 
-        {canEdit && car.confirmed && nextStage && (
+        {canEdit && car.confirmed && nextStage && !blockedToShipping && (
           <button onClick={() => handleMoveStage(nextStage)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
             {t(`car.move_to_${nextStage}`)}
           </button>
+        )}
+        {canEdit && car.confirmed && blockedToShipping && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-700">
+            {t('car.deposit_02_required')}
+          </div>
         )}
 
         {canEdit && car.current_stage === 'deposit' && (
@@ -117,6 +123,15 @@ export default function CarDetails() {
                 className="border rounded-lg p-2 w-48 outline-none focus:ring-2 focus:ring-blue-500" />
               <span className="text-xs text-gray-500">{t('car.cannot_exceed_price')}: {car.initial_price}</span>
             </div>
+          </div>
+        )}
+
+        {canEdit && car.current_stage === 'purchase' && (
+          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <label className="block text-sm font-medium text-blue-800 mb-1">{t('car.deposit_02')}</label>
+            <input type="number" value={fees?.deposit_02 || 0} min={0}
+              onChange={e => handleSaveFees({ deposit_02: Number(e.target.value) })}
+              className="border rounded-lg p-2 w-48 outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         )}
       </div>
@@ -149,7 +164,7 @@ export default function CarDetails() {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="font-semibold mb-4">{t('car.fees')}</h2>
           <div className="space-y-3">
-            {(['deposit', 'transport_01', 'parking', 'other_fees', 'transport_02'] as const).map(key => (
+            {(['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02'] as const).map(key => (
               <div key={key} className="flex items-center gap-4">
                 <label className="w-32 text-sm text-gray-600">{t(`car.${key}`)}</label>
                 <input type="number" value={fees?.[key] || 0} min={0}
@@ -158,7 +173,7 @@ export default function CarDetails() {
               </div>
             ))}
             <div className="text-sm font-medium pt-2 border-t">
-              {t('car.total_fees')}: {fees ? (fees.deposit + fees.transport_01 + fees.parking + fees.other_fees + fees.transport_02).toLocaleString() : 0}
+              {t('car.total_fees')}: {fees ? (fees.deposit + fees.deposit_02 + fees.transport_01 + fees.parking + fees.other_fees + fees.transport_02).toLocaleString() : 0}
             </div>
           </div>
         </div>

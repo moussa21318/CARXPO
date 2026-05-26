@@ -36,6 +36,7 @@ CREATE TABLE car_fees (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   car_id UUID UNIQUE REFERENCES cars(id) ON DELETE CASCADE,
   deposit NUMERIC(12,2) DEFAULT 0,
+  deposit_02 NUMERIC(12,2) DEFAULT 0,
   transport_01 NUMERIC(12,2) DEFAULT 0,
   parking NUMERIC(12,2) DEFAULT 0,
   other_fees NUMERIC(12,2) DEFAULT 0,

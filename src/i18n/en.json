@@ -83,7 +83,9 @@
     "all_stages": "All Stages",
     "images": "Images",
     "info": "Car Info",
-    "deposit": "Deposit"
+    "deposit": "Deposit",
+    "deposit_02": "2nd Payment",
+    "deposit_02_required": "Enter 2nd Payment before moving to Shipping Prep"
   },
   "users": {
     "title": "User Management",
@@ -125,6 +127,8 @@
     "cars": "Cars",
     "customers": "Customers",
     "columns": "Select & Order Columns",
+    "select_all": "☑ All",
+    "deselect_all": "☐ None",
     "load": "Load Data",
     "load_hint": "Click Load Data to display records",
     "preview": "Preview",
