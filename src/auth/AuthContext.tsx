@@ -18,10 +18,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const seedAdmin = useCallback(async () => {
-    const existing = await getUsers()
-    if (existing.length === 0) {
-      const pw = await hash('admin')
-      await createUser({ username: 'admin', password_hash: pw, role: 'admin', full_name: 'Administrator', is_active: true })
+    try {
+      const existing = await getUsers()
+      if (existing.length === 0) {
+        const pw = await hash('admin')
+        await createUser({ username: 'admin', password_hash: pw, role: 'admin', full_name: 'Administrator', is_active: true })
+      }
+    } catch (e) {
+      console.error('seedAdmin error:', e)
     }
   }, [])
 
@@ -39,13 +43,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [seedAdmin])
 
   const login = useCallback(async (username: string, password: string): Promise<string | null> => {
-    const found = await getUserByUsername(username)
-    if (!found || !found.is_active) return 'Invalid credentials'
-    const ok = await verify(password, found.password_hash)
-    if (!ok) return 'Invalid credentials'
-    setUser(found)
-    localStorage.setItem('carxpo_user_id', found.id)
-    return null
+    try {
+      const found = await getUserByUsername(username)
+      if (!found || !found.is_active) return 'Invalid credentials'
+      const ok = await verify(password, found.password_hash)
+      if (!ok) return 'Invalid credentials'
+      setUser(found)
+      localStorage.setItem('carxpo_user_id', found.id)
+      return null
+    } catch (e) {
+      console.error('login error:', e)
+      return 'Server connection error'
+    }
   }, [])
 
   const logout = useCallback(() => {
