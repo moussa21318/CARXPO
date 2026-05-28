@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type {
   User, Car, CarFees, CarStageLog, RequestClient, Customer,
-  EditRequest, ChangeLog, Notification, CarStage,
+  EditRequest, ChangeLog, Notification, CarStage, CarAttachment,
 } from '../types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -278,4 +278,24 @@ export async function bulkInsertCars(cars: Partial<Car>[]): Promise<void> {
 export async function bulkInsertCustomers(customers: Partial<Customer>[]): Promise<void> {
   const { error } = await getClient().from('customers').insert(customers)
   if (error) handleError('bulkInsertCustomers failed', error)
+}
+
+// --- Attachments ---
+export async function getAttachments(carId: string): Promise<CarAttachment[]> {
+  try {
+    const { data, error } = await getClient().from('car_attachments').select('*').eq('car_id', carId).order('created_at', { ascending: true })
+    if (error) return []
+    return (data as CarAttachment[]) || []
+  } catch { return [] }
+}
+
+export async function addAttachment(payload: Partial<CarAttachment>): Promise<CarAttachment> {
+  const { data, error } = await getClient().from('car_attachments').insert(payload).select().single()
+  if (error) handleError('addAttachment failed', error)
+  return data as CarAttachment
+}
+
+export async function deleteAttachment(id: string): Promise<void> {
+  const { error } = await getClient().from('car_attachments').delete().eq('id', id)
+  if (error) handleError('deleteAttachment failed', error)
 }

@@ -1,6 +1,18 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Drop existing tables (order matters for FK constraints)
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS change_log CASCADE;
+DROP TABLE IF EXISTS edit_requests CASCADE;
+DROP TABLE IF EXISTS car_attachments CASCADE;
+DROP TABLE IF EXISTS customers CASCADE;
+DROP TABLE IF EXISTS request_clients CASCADE;
+DROP TABLE IF EXISTS car_stage_logs CASCADE;
+DROP TABLE IF EXISTS car_fees CASCADE;
+DROP TABLE IF EXISTS cars CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 -- Users table
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -99,6 +111,15 @@ CREATE TABLE change_log (
   new_data JSONB,
   user_id UUID REFERENCES users(id),
   timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Car attachments
+CREATE TABLE car_attachments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Notifications

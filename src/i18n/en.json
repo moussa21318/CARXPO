@@ -85,7 +85,15 @@
     "info": "Car Info",
     "deposit": "Deposit",
     "deposit_02": "2nd Payment",
-    "deposit_02_required": "Enter 2nd Payment before moving to Shipping Prep"
+    "deposit_02_required": "Enter 2nd Payment before moving to Shipping Prep",
+    "undo_confirm": "Undo Confirm",
+    "evidence_url": "Evidence URL",
+    "evidence_required": "Enter the evidence URL before moving to Purchase",
+    "attachments": "Attachments",
+    "attachment_name": "Attachment Name",
+    "attachment_url": "Attachment URL",
+    "add_attachment": "Add Attachment",
+    "load_error": "Failed to load data"
   },
   "users": {
     "title": "User Management",

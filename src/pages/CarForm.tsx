@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { createCar, getCar, updateCar, getRequestClient as getRC, upsertRequestClient } from '../db/cloud'
-import { MODEL_YEARS } from '../types'
+import { MODEL_YEARS, STAGE_ORDER, STAGE_LABELS } from '../types'
 
 export default function CarForm() {
   const { t } = useTranslation()
@@ -21,7 +21,9 @@ export default function CarForm() {
   const [notes, setNotes] = useState('')
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
+  const [currentStage, setCurrentStage] = useState('request')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -34,23 +36,27 @@ export default function CarForm() {
       setSellerPhone(car.seller_phone || '')
       setInitialPrice(car.initial_price)
       setNotes(car.notes || '')
-    })
+      setCurrentStage(car.current_stage)
+    }).catch(() => setError(t('car.load_error')))
     getRC(id).then(rc => {
       if (rc) { setClientName(rc.name); setClientPhone(rc.phone) }
-    })
+    }).catch(() => {})
   }, [id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || !canEdit) return
     setSaving(true)
+    setError('')
     try {
       if (isEdit && id) {
-        await updateCar(id, {
+        const payload: any = {
           name, model_year: modelYear, serial_number: serialNumber || null,
           license_plate: licensePlate || null, seller_phone: sellerPhone,
           initial_price: initialPrice, notes, updated_by: user.id,
-        })
+        }
+        if (user.role === 'admin') payload.current_stage = currentStage
+        await updateCar(id, payload)
         if (clientName) {
           const existing = await getRC(id)
           await upsertRequestClient({ id: existing?.id, car_id: id, name: clientName, phone: clientPhone })
@@ -66,6 +72,8 @@ export default function CarForm() {
         return
       }
       navigate(`/cars/${id}`)
+    } catch (err: any) {
+      setError(err?.message || t('app.error'))
     } finally {
       setSaving(false)
     }
@@ -75,6 +83,7 @@ export default function CarForm() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">{isEdit ? t('car.edit') : t('car.add')}</h1>
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{error}</div>}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.name')} *</label>
           <input value={name} onChange={e => setName(e.target.value)} required
@@ -114,6 +123,15 @@ export default function CarForm() {
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
+            {user?.role === 'admin' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.current_stage')}</label>
+                <select value={currentStage} onChange={e => setCurrentStage(e.target.value)}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                  {STAGE_ORDER.map(s => <option key={s} value={s}>{t(STAGE_LABELS[s])}</option>)}
+                </select>
+              </div>
+            )}
           </>
         )}
         <div className="border-t pt-4">

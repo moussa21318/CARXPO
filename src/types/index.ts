@@ -108,6 +108,14 @@ export interface Notification {
   created_at: string
 }
 
+export interface CarAttachment {
+  id: string
+  car_id: string
+  name: string
+  url: string
+  created_at: string
+}
+
 export const STAGE_LABELS: Record<CarStage, string> = {
   request: 'stages.request',
   deposit: 'stages.deposit',

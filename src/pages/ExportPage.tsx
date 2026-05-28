@@ -187,16 +187,16 @@ export default function ExportPage() {
                         const col = groupCols.find(c => c.key === key)
                         if (!col) return null
                         return (
-                          <div key={key} className="flex items-center gap-2 py-1 px-2 hover:bg-gray-50 rounded">
+                          <div key={key} className="flex items-center gap-2 py-1 px-2 hover:bg-gray-50 rounded min-w-0">
                             <input type="checkbox" checked={selected.includes(key)}
-                              onChange={() => toggleColumn(key)} className="w-4 h-4" />
-                            <span className="flex-1 text-sm">{t(col.labelKey)}</span>
+                              onChange={() => toggleColumn(key)} className="w-4 h-4 flex-shrink-0" />
+                            <span className="flex-1 text-sm truncate min-w-0">{t(col.labelKey)}</span>
                             <button onClick={() => moveUp(key)}
                               disabled={order.indexOf(key) === 0}
-                              className="px-2 py-0.5 text-xs bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-30">↑</button>
+                              className="px-2 py-0.5 text-xs bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-30 flex-shrink-0">↑</button>
                             <button onClick={() => moveDown(key)}
                               disabled={order.indexOf(key) >= order.length - 1}
-                              className="px-2 py-0.5 text-xs bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-30">↓</button>
+                              className="px-2 py-0.5 text-xs bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-30 flex-shrink-0">↓</button>
                           </div>
                         )
                       })}

@@ -85,7 +85,15 @@
     "info": "Infos voiture",
     "deposit": "Acompte",
     "deposit_02": "2e versement",
-    "deposit_02_required": "Saisir le 2e versement avant de passer à la préparation"
+    "deposit_02_required": "Saisir le 2e versement avant de passer à la préparation",
+    "undo_confirm": "Annuler la confirmation",
+    "evidence_url": "URL de preuve",
+    "evidence_required": "Entrez l'URL de preuve avant de passer à l'achat",
+    "attachments": "Pièces jointes",
+    "attachment_name": "Nom de la pièce",
+    "attachment_url": "URL de la pièce",
+    "add_attachment": "Ajouter une pièce",
+    "load_error": "Échec du chargement"
   },
   "users": {
     "title": "Gestion des utilisateurs",

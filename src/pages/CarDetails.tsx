@@ -6,8 +6,10 @@ import {
   getCar, updateCar, getCarFees, upsertCarFees,
   getStageLogs, moveToStage,
   getRequestClient, getCustomer, upsertCustomer,
+  getAttachments, addAttachment, deleteAttachment,
 } from '../db/cloud'
-import { STAGE_ORDER, STAGE_LABELS, type Car, type CarFees, type CarStage } from '../types'
+import { STAGE_ORDER, STAGE_LABELS, type Car, type CarFees, type CarStage, type CarAttachment } from '../types'
+import { formatPrice } from '../utils/format'
 
 export default function CarDetails() {
   const { t } = useTranslation()
@@ -19,18 +21,25 @@ export default function CarDetails() {
   const [stageLogs, setStageLogs] = useState<any[]>([])
   const [requestClient, setRequestClient] = useState<any>(null)
   const [customerData, setCustomerData] = useState<any>(null)
+  const [attachments, setAttachments] = useState<CarAttachment[]>([])
+  const [evidenceUrl, setEvidenceUrl] = useState('')
+  const [newAttachName, setNewAttachName] = useState('')
+  const [newAttachUrl, setNewAttachUrl] = useState('')
   const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
     if (!id) return
-    const [c, f, sl, rc, cust] = await Promise.all([
-      getCar(id), getCarFees(id), getStageLogs(id), getRequestClient(id), getCustomer(id),
+    const [c, f, sl, rc, cust, att] = await Promise.all([
+      getCar(id), getCarFees(id), getStageLogs(id), getRequestClient(id), getCustomer(id), getAttachments(id),
     ])
     setCar(c)
     setFees(f)
     setStageLogs(sl)
     setRequestClient(rc)
     setCustomerData(cust || {})
+    setAttachments(att)
+    const lastWithEvidence = sl?.find(log => log.evidence_url)
+    if (lastWithEvidence) setEvidenceUrl(lastWithEvidence.evidence_url || '')
     setLoading(false)
   }
 
@@ -42,9 +51,15 @@ export default function CarDetails() {
     loadData()
   }
 
-  const handleMoveStage = async (stage: CarStage) => {
+  const handleUnconfirm = async () => {
     if (!id || !user) return
-    await moveToStage(id, stage, null, '', user.id)
+    await updateCar(id, { confirmed: false, updated_by: user.id })
+    loadData()
+  }
+
+  const handleMoveStage = async (stage: CarStage, evUrl?: string | null) => {
+    if (!id || !user) return
+    await moveToStage(id, stage, evUrl ?? null, '', user.id)
     loadData()
   }
 
@@ -60,16 +75,32 @@ export default function CarDetails() {
     loadData()
   }
 
+  const handleAddAttachment = async () => {
+    if (!id || !newAttachName || !newAttachUrl) return
+    await addAttachment({ car_id: id, name: newAttachName, url: newAttachUrl })
+    setNewAttachName('')
+    setNewAttachUrl('')
+    loadData()
+  }
+
+  const handleDeleteAttachment = async (attId: string) => {
+    await deleteAttachment(attId)
+    loadData()
+  }
+
   if (loading) return <div className="text-center py-8 text-gray-500">{t('app.loading')}</div>
   if (!car) return <div className="text-center py-8 text-gray-400">{t('app.no_data')}</div>
 
   const stageIndex = STAGE_ORDER.indexOf(car.current_stage)
   const nextStage = stageIndex < STAGE_ORDER.length - 1 ? STAGE_ORDER[stageIndex + 1] : null
   const blockedToShipping = nextStage === 'shipping_prep' && !(fees && fees.deposit_02 > 0)
+  const hasDeposit = fees && fees.deposit > 0
+  const evidenceRequired = car.current_stage === 'deposit' && hasDeposit
+  const evidenceBlocked = evidenceRequired && !evidenceUrl
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <Link to="/cars" className="text-blue-600 hover:underline">{t('app.back')}</Link>
         <h1 className="text-2xl font-bold flex-1">{car.name} ({car.model_year})</h1>
         {canEdit && (
@@ -102,7 +133,53 @@ export default function CarDetails() {
           </div>
         )}
 
-        {canEdit && car.confirmed && nextStage && !blockedToShipping && (
+        {canEdit && car.current_stage === 'request' && car.confirmed && nextStage && (
+          <div className="flex flex-wrap gap-3 mt-4">
+            <button onClick={handleUnconfirm}
+              className="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 text-sm">
+              {t('car.undo_confirm')}
+            </button>
+            <button onClick={() => handleMoveStage(nextStage)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+              {t(`car.move_to_${nextStage}`)}
+            </button>
+          </div>
+        )}
+
+        {canEdit && car.current_stage === 'deposit' && (
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.deposit_amount')}</label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <input type="number" value={fees?.deposit || 0} min={0} max={car.initial_price}
+                  onChange={e => handleSaveFees({ deposit: Number(e.target.value) })}
+                  className="border rounded-lg p-2 w-full sm:w-48 outline-none focus:ring-2 focus:ring-blue-500" />
+                <span className="text-xs text-gray-500">{t('car.cannot_exceed_price')}: {formatPrice(car.initial_price)}</span>
+              </div>
+            </div>
+            {hasDeposit && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-blue-800 mb-1">{t('car.evidence_url')}</label>
+                  <input type="url" value={evidenceUrl}
+                    onChange={e => setEvidenceUrl(e.target.value)}
+                    placeholder="https://"
+                    className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                {evidenceUrl ? (
+                  <button onClick={() => handleMoveStage('purchase', evidenceUrl)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                    {t('car.move_to_purchase')}
+                  </button>
+                ) : (
+                  <p className="text-sm text-orange-600">{t('car.evidence_required')}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {canEdit && car.confirmed && nextStage && nextStage !== 'deposit' && nextStage !== 'purchase' && !evidenceBlocked && !blockedToShipping && (
           <button onClick={() => handleMoveStage(nextStage)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
             {t(`car.move_to_${nextStage}`)}
@@ -114,24 +191,12 @@ export default function CarDetails() {
           </div>
         )}
 
-        {canEdit && car.current_stage === 'deposit' && (
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.deposit_amount')}</label>
-            <div className="flex gap-3 items-center">
-              <input type="number" value={fees?.deposit || 0} min={0} max={car.initial_price}
-                onChange={e => handleSaveFees({ deposit: Number(e.target.value) })}
-                className="border rounded-lg p-2 w-48 outline-none focus:ring-2 focus:ring-blue-500" />
-              <span className="text-xs text-gray-500">{t('car.cannot_exceed_price')}: {car.initial_price}</span>
-            </div>
-          </div>
-        )}
-
         {canEdit && car.current_stage === 'purchase' && (
           <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <label className="block text-sm font-medium text-blue-800 mb-1">{t('car.deposit_02')}</label>
             <input type="number" value={fees?.deposit_02 || 0} min={0}
               onChange={e => handleSaveFees({ deposit_02: Number(e.target.value) })}
-              className="border rounded-lg p-2 w-48 outline-none focus:ring-2 focus:ring-blue-500" />
+              className="border rounded-lg p-2 w-full sm:w-48 outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         )}
       </div>
@@ -142,7 +207,7 @@ export default function CarDetails() {
           <div><span className="text-gray-500">{t('car.serial_number')}:</span> <span className="font-mono">{car.serial_number || '-'}</span></div>
           <div><span className="text-gray-500">{t('car.license_plate')}:</span> <span>{car.license_plate || '-'}</span></div>
           <div><span className="text-gray-500">{t('car.seller_phone')}:</span> <span>{car.seller_phone || '-'}</span></div>
-          <div><span className="text-gray-500">{t('car.initial_price')}:</span> <span>{car.initial_price?.toLocaleString() || '-'}</span></div>
+          <div><span className="text-gray-500">{t('car.initial_price')}:</span> <span>{formatPrice(car.initial_price)}</span></div>
           <div><span className="text-gray-500">{t('car.current_stage')}:</span> <span>{t(STAGE_LABELS[car.current_stage])}</span></div>
           <div><span className="text-gray-500">{t('car.confirmed')}:</span>
             <span className={car.confirmed ? 'text-green-600' : 'text-gray-400'}>{car.confirmed ? '✓' : '✗'}</span>
@@ -163,21 +228,62 @@ export default function CarDetails() {
       {(car.current_stage === 'purchase' || car.current_stage === 'shipping_prep' || car.current_stage === 'shipping') && (
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="font-semibold mb-4">{t('car.fees')}</h2>
-          <div className="space-y-3">
+          <div className="space-y-3 max-w-full overflow-hidden">
             {(['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02'] as const).map(key => (
-              <div key={key} className="flex items-center gap-4">
-                <label className="w-32 text-sm text-gray-600">{t(`car.${key}`)}</label>
+              <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                <label className="sm:w-32 text-sm text-gray-600">{t(`car.${key}`)}</label>
                 <input type="number" value={fees?.[key] || 0} min={0}
                   onChange={e => handleSaveFees({ [key]: Number(e.target.value) })}
-                  className="border rounded-lg p-2 w-48 outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="border rounded-lg p-2 w-full sm:w-48 outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             ))}
             <div className="text-sm font-medium pt-2 border-t">
-              {t('car.total_fees')}: {fees ? (fees.deposit + fees.deposit_02 + fees.transport_01 + fees.parking + fees.other_fees + fees.transport_02).toLocaleString() : 0}
+              {t('car.total_fees')}: {fees ? formatPrice(fees.deposit + fees.deposit_02 + fees.transport_01 + fees.parking + fees.other_fees + fees.transport_02) : '₩0'}
             </div>
           </div>
         </div>
       )}
+
+      {/* Attachments section - visible for all stages */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="font-semibold mb-4">{t('car.attachments')}</h2>
+        {attachments.length === 0 ? (
+          <p className="text-gray-400 text-sm mb-3">{t('app.no_data')}</p>
+        ) : (
+          <div className="space-y-2 mb-4">
+            {attachments.map(att => (
+              <div key={att.id} className="flex items-center gap-3 text-sm border-b pb-2">
+                <a href={att.url} target="_blank" rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline truncate flex-1">{att.name}</a>
+                {canEdit && (
+                  <button onClick={() => handleDeleteAttachment(att.id)}
+                    className="text-red-500 hover:text-red-700 text-xs px-2">✕</button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {canEdit && (
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+            <div className="flex-1">
+              <label className="block text-xs text-gray-500 mb-1">{t('car.attachment_name')}</label>
+              <input value={newAttachName} onChange={e => setNewAttachName(e.target.value)}
+                className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs text-gray-500 mb-1">{t('car.attachment_url')}</label>
+              <input type="url" value={newAttachUrl} onChange={e => setNewAttachUrl(e.target.value)}
+                placeholder="https://"
+                className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <button onClick={handleAddAttachment}
+              disabled={!newAttachName || !newAttachUrl}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm whitespace-nowrap">
+              {t('car.add_attachment')}
+            </button>
+          </div>
+        )}
+      </div>
 
       {(car.current_stage === 'shipping_prep' || car.current_stage === 'shipping') && (
         <div className="bg-white rounded-xl shadow-sm p-6">
@@ -207,9 +313,13 @@ export default function CarDetails() {
         ) : (
           <div className="space-y-2">
             {stageLogs.map(log => (
-              <div key={log.id} className="flex items-center gap-3 text-sm border-b pb-2 last:border-0">
+              <div key={log.id} className="flex items-center gap-3 text-sm border-b pb-2 last:border-0 flex-wrap">
                 <span className="text-gray-500 text-xs">{new Date(log.created_at).toLocaleString()}</span>
                 <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{t(STAGE_LABELS[log.stage as CarStage])}</span>
+                {log.evidence_url && (
+                  <a href={log.evidence_url} target="_blank" rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-xs">{t('car.evidence')}</a>
+                )}
                 {log.notes && <span className="text-gray-600">{log.notes}</span>}
               </div>
             ))}
