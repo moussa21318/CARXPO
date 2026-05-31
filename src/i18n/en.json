@@ -93,7 +93,9 @@
     "attachment_name": "Attachment Name",
     "attachment_url": "Attachment URL",
     "add_attachment": "Add Attachment",
-    "load_error": "Failed to load data"
+    "load_error": "Failed to load data",
+    "uploading": "Uploading...",
+    "evidence_uploaded": "Evidence uploaded"
   },
   "users": {
     "title": "User Management",

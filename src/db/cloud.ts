@@ -9,7 +9,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 let supabase: SupabaseClient
 
-function getClient(): SupabaseClient {
+export function getClient(): SupabaseClient {
   if (!supabase) {
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env vars')
@@ -281,11 +281,15 @@ export async function bulkInsertCustomers(customers: Partial<Customer>[]): Promi
 }
 
 // --- Attachments ---
-export async function getAttachments(carId: string): Promise<CarAttachment[]> {
+export async function getAttachments(carId: string): Promise<(CarAttachment & { publicUrl: string })[]> {
   try {
     const { data, error } = await getClient().from('car_attachments').select('*').eq('car_id', carId).order('created_at', { ascending: true })
     if (error) return []
-    return (data as CarAttachment[]) || []
+    const items = (data as CarAttachment[]) || []
+    return items.map(item => {
+      const { data: pub } = getClient().storage.from('car_attachments').getPublicUrl(item.storage_path)
+      return { ...item, publicUrl: pub.publicUrl }
+    })
   } catch { return [] }
 }
 
@@ -295,7 +299,11 @@ export async function addAttachment(payload: Partial<CarAttachment>): Promise<Ca
   return data as CarAttachment
 }
 
-export async function deleteAttachment(id: string): Promise<void> {
+export async function deleteAttachment(id: string, storagePath?: string): Promise<void> {
+  if (storagePath) {
+    const { error: delErr } = await getClient().storage.from('car_attachments').remove([storagePath])
+    if (delErr) handleError('deleteAttachment storage failed', delErr)
+  }
   const { error } = await getClient().from('car_attachments').delete().eq('id', id)
   if (error) handleError('deleteAttachment failed', error)
 }

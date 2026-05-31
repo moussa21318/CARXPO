@@ -112,7 +112,7 @@ export interface CarAttachment {
   id: string
   car_id: string
   name: string
-  url: string
+  storage_path: string
   created_at: string
 }
 

@@ -93,7 +93,9 @@
     "attachment_name": "Nom de la pièce",
     "attachment_url": "URL de la pièce",
     "add_attachment": "Ajouter une pièce",
-    "load_error": "Échec du chargement"
+    "load_error": "Échec du chargement",
+    "uploading": "Téléchargement...",
+    "evidence_uploaded": "Preuve téléchargée"
   },
   "users": {
     "title": "Gestion des utilisateurs",

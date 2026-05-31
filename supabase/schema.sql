@@ -118,9 +118,30 @@ CREATE TABLE car_attachments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  url TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Storage bucket for attachments
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('car_attachments', 'car_attachments', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow authenticated users to upload files
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'upload_auth' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "upload_auth" ON storage.objects
+      FOR INSERT TO authenticated WITH CHECK (bucket_id = 'car_attachments');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'select_public' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "select_public" ON storage.objects
+      FOR SELECT TO public USING (bucket_id = 'car_attachments');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'delete_auth' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "delete_auth" ON storage.objects
+      FOR DELETE TO authenticated USING (bucket_id = 'car_attachments');
+  END IF;
+END $$;
 
 -- Notifications
 CREATE TABLE notifications (

@@ -8,7 +8,8 @@ import {
   getRequestClient, getCustomer, upsertCustomer,
   getAttachments, addAttachment, deleteAttachment,
 } from '../db/cloud'
-import { STAGE_ORDER, STAGE_LABELS, type Car, type CarFees, type CarStage, type CarAttachment } from '../types'
+import { uploadFile } from '../utils/upload'
+import { STAGE_ORDER, STAGE_LABELS, type Car, type CarFees, type CarStage } from '../types'
 import { formatPrice } from '../utils/format'
 
 export default function CarDetails() {
@@ -21,10 +22,11 @@ export default function CarDetails() {
   const [stageLogs, setStageLogs] = useState<any[]>([])
   const [requestClient, setRequestClient] = useState<any>(null)
   const [customerData, setCustomerData] = useState<any>(null)
-  const [attachments, setAttachments] = useState<CarAttachment[]>([])
-  const [evidenceUrl, setEvidenceUrl] = useState('')
-  const [newAttachName, setNewAttachName] = useState('')
-  const [newAttachUrl, setNewAttachUrl] = useState('')
+  const [attachments, setAttachments] = useState<any[]>([])
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
+  const [evidencePublicUrl, setEvidencePublicUrl] = useState('')
+  const [newAttachFile, setNewAttachFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
@@ -39,7 +41,7 @@ export default function CarDetails() {
     setCustomerData(cust || {})
     setAttachments(att)
     const lastWithEvidence = sl?.find(log => log.evidence_url)
-    if (lastWithEvidence) setEvidenceUrl(lastWithEvidence.evidence_url || '')
+    if (lastWithEvidence) setEvidencePublicUrl(lastWithEvidence.evidence_url || '')
     setLoading(false)
   }
 
@@ -75,16 +77,33 @@ export default function CarDetails() {
     loadData()
   }
 
-  const handleAddAttachment = async () => {
-    if (!id || !newAttachName || !newAttachUrl) return
-    await addAttachment({ car_id: id, name: newAttachName, url: newAttachUrl })
-    setNewAttachName('')
-    setNewAttachUrl('')
-    loadData()
+  const handleUploadEvidence = async () => {
+    if (!id || !evidenceFile) return
+    setUploading(true)
+    try {
+      const { publicUrl } = await uploadFile('car_attachments', `evidence/${id}`, evidenceFile)
+      setEvidencePublicUrl(publicUrl)
+      setEvidenceFile(null)
+    } finally {
+      setUploading(false)
+    }
   }
 
-  const handleDeleteAttachment = async (attId: string) => {
-    await deleteAttachment(attId)
+  const handleAddAttachment = async () => {
+    if (!id || !newAttachFile) return
+    setUploading(true)
+    try {
+      const { storagePath } = await uploadFile('car_attachments', `attachments/${id}`, newAttachFile)
+      await addAttachment({ car_id: id, name: newAttachFile.name, storage_path: storagePath })
+      setNewAttachFile(null)
+      loadData()
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDeleteAttachment = async (att: any) => {
+    await deleteAttachment(att.id, att.storage_path)
     loadData()
   }
 
@@ -96,7 +115,7 @@ export default function CarDetails() {
   const blockedToShipping = nextStage === 'shipping_prep' && !(fees && fees.deposit_02 > 0)
   const hasDeposit = fees && fees.deposit > 0
   const evidenceRequired = car.current_stage === 'deposit' && hasDeposit
-  const evidenceBlocked = evidenceRequired && !evidenceUrl
+  const evidenceBlocked = evidenceRequired && !evidencePublicUrl
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -159,18 +178,24 @@ export default function CarDetails() {
             </div>
             {hasDeposit && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-blue-800 mb-1">{t('car.evidence_url')}</label>
-                  <input type="url" value={evidenceUrl}
-                    onChange={e => setEvidenceUrl(e.target.value)}
-                    placeholder="https://"
-                    className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                {evidenceUrl ? (
-                  <button onClick={() => handleMoveStage('purchase', evidenceUrl)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-                    {t('car.move_to_purchase')}
+                <label className="block text-sm font-medium text-blue-800">{t('car.evidence')}</label>
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <input type="file" onChange={e => setEvidenceFile(e.target.files?.[0] || null)}
+                    accept="image/*,.pdf"
+                    className="flex-1 text-sm" />
+                  <button onClick={handleUploadEvidence} disabled={!evidenceFile || uploading}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm whitespace-nowrap">
+                    {uploading ? t('car.uploading') : t('car.upload_evidence')}
                   </button>
+                </div>
+                {evidencePublicUrl ? (
+                  <div className="flex items-center gap-2 text-sm text-green-700">
+                    <span>✓ {t('car.evidence_uploaded')}</span>
+                    <button onClick={() => handleMoveStage('purchase', evidencePublicUrl)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm ml-auto">
+                      {t('car.move_to_purchase')}
+                    </button>
+                  </div>
                 ) : (
                   <p className="text-sm text-orange-600">{t('car.evidence_required')}</p>
                 )}
@@ -244,19 +269,18 @@ export default function CarDetails() {
         </div>
       )}
 
-      {/* Attachments section - visible for all stages */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="font-semibold mb-4">{t('car.attachments')}</h2>
         {attachments.length === 0 ? (
           <p className="text-gray-400 text-sm mb-3">{t('app.no_data')}</p>
         ) : (
           <div className="space-y-2 mb-4">
-            {attachments.map(att => (
+            {attachments.map((att: any) => (
               <div key={att.id} className="flex items-center gap-3 text-sm border-b pb-2">
-                <a href={att.url} target="_blank" rel="noopener noreferrer"
+                <a href={att.publicUrl} target="_blank" rel="noopener noreferrer"
                   className="text-blue-600 hover:underline truncate flex-1">{att.name}</a>
                 {canEdit && (
-                  <button onClick={() => handleDeleteAttachment(att.id)}
+                  <button onClick={() => handleDeleteAttachment(att)}
                     className="text-red-500 hover:text-red-700 text-xs px-2">✕</button>
                 )}
               </div>
@@ -264,22 +288,12 @@ export default function CarDetails() {
           </div>
         )}
         {canEdit && (
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
-            <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">{t('car.attachment_name')}</label>
-              <input value={newAttachName} onChange={e => setNewAttachName(e.target.value)}
-                className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">{t('car.attachment_url')}</label>
-              <input type="url" value={newAttachUrl} onChange={e => setNewAttachUrl(e.target.value)}
-                placeholder="https://"
-                className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <button onClick={handleAddAttachment}
-              disabled={!newAttachName || !newAttachUrl}
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <input type="file" onChange={e => setNewAttachFile(e.target.files?.[0] || null)}
+              className="flex-1 text-sm" />
+            <button onClick={handleAddAttachment} disabled={!newAttachFile || uploading}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm whitespace-nowrap">
-              {t('car.add_attachment')}
+              {uploading ? t('car.uploading') : t('car.add_attachment')}
             </button>
           </div>
         )}
