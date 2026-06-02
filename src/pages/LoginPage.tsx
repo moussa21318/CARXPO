@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
+import { storageKey } from '../config/app'
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation()
@@ -44,7 +45,7 @@ export default function LoginPage() {
         </form>
         <div className="flex justify-center gap-2 mt-6">
           {(['ar', 'fr', 'en'] as const).map(lang => (
-            <button key={lang} onClick={() => { i18n.changeLanguage(lang); localStorage.setItem('carxpo_lang', lang) }}
+            <button key={lang} onClick={() => { i18n.changeLanguage(lang); localStorage.setItem(storageKey('lang'), lang) }}
               className={`px-3 py-1 text-sm rounded ${i18n.language === lang ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600'}`}>
               {lang === 'ar' ? 'العربية' : lang === 'fr' ? 'Français' : 'English'}
             </button>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { storageKey } from '../config/app'
 
 type Theme = 'light' | 'dark'
 
@@ -11,13 +12,13 @@ const ThemeContext = createContext<ThemeContextType>({ theme: 'light', toggle: (
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem('carxpo_theme')
+    const stored = localStorage.getItem(storageKey('theme'))
     if (stored === 'dark' || stored === 'light') return stored
     return 'light'
   })
 
   useEffect(() => {
-    localStorage.setItem('carxpo_theme', theme)
+    localStorage.setItem(storageKey('theme'), theme)
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
 

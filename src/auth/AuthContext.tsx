@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import type { User } from '../types'
 import { getUserByUsername, getUsers, createUser } from '../db/cloud'
 import { hash, verify } from '../utils/hash'
+import { storageKey } from '../config/app'
 
 interface AuthContextType {
   user: User | null
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const savedId = localStorage.getItem('carxpo_user_id')
+    const savedId = localStorage.getItem(storageKey('user_id'))
     if (savedId) {
       getUsers().then(all => {
         const u = all.find(x => x.id === savedId && x.is_active)
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const ok = await verify(password, found.password_hash)
       if (!ok) return 'Invalid credentials'
       setUser(found)
-      localStorage.setItem('carxpo_user_id', found.id)
+      localStorage.setItem(storageKey('user_id'), found.id)
       return null
     } catch (e) {
       console.error('login error:', e)
@@ -59,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null)
-    localStorage.removeItem('carxpo_user_id')
+    localStorage.removeItem(storageKey('user_id'))
   }, [])
 
   return (

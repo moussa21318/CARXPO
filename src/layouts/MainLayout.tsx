@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { getUnreadCount } from '../db/cloud'
 import { useTheme } from '../context/ThemeContext'
+import { storageKey } from '../config/app'
 
 export default function MainLayout() {
   const { t, i18n } = useTranslation()
@@ -64,7 +65,7 @@ export default function MainLayout() {
         <div className="p-4 border-t dark:border-gray-700 mt-auto">
           <div className="flex items-center gap-2 mb-3">
             {(['ar', 'fr', 'en'] as const).map(lang => (
-              <button key={lang} onClick={() => { i18n.changeLanguage(lang); localStorage.setItem('carxpo_lang', lang) }}
+              <button key={lang} onClick={() => { i18n.changeLanguage(lang); localStorage.setItem(storageKey('lang'), lang) }}
                 className={`px-2 py-1 text-xs rounded ${i18n.language === lang ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 dark:text-gray-200'}`}>
                 {lang === 'ar' ? 'العربية' : lang === 'fr' ? 'Français' : 'English'}
               </button>
