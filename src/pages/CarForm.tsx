@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { createCar, getCar, updateCar, getRequestClient as getRC, upsertRequestClient } from '../db/cloud'
+import { createCar, getCar, updateCar, getRequestClient as getRC, upsertRequestClient, getAllRequestClients } from '../db/cloud'
 import { MODEL_YEARS, STAGE_ORDER, STAGE_LABELS } from '../types'
 
 export default function CarForm() {
@@ -25,6 +25,16 @@ export default function CarForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const allClientsRef = useRef<{name: string; phone: string}[]>([])
+  const [nameSugs, setNameSugs] = useState<{name: string; phone: string}[]>([])
+  const [phoneSugs, setPhoneSugs] = useState<{name: string; phone: string}[]>([])
+
+  useEffect(() => {
+    getAllRequestClients().then(data => {
+      allClientsRef.current = data.map(r => ({ name: r.name, phone: r.phone }))
+    }).catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (!id) return
     getCar(id).then(car => {
@@ -42,6 +52,38 @@ export default function CarForm() {
       if (rc) { setClientName(rc.name); setClientPhone(rc.phone) }
     }).catch(() => {})
   }, [id])
+
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text
+    const idx = text.indexOf(query)
+    if (idx === -1) return text
+    return (
+      <>
+        {text.slice(0, idx)}
+        <strong>{text.slice(idx, idx + query.length)}</strong>
+        {text.slice(idx + query.length)}
+      </>
+    )
+  }
+
+  const handleNameInput = (val: string) => {
+    setClientName(val)
+    if (!val) { setNameSugs([]); return }
+    setNameSugs(allClientsRef.current.filter(c => c.name.includes(val)))
+  }
+
+  const handlePhoneInput = (val: string) => {
+    setClientPhone(val)
+    if (!val) { setPhoneSugs([]); return }
+    setPhoneSugs(allClientsRef.current.filter(c => c.phone.includes(val)))
+  }
+
+  const pickSuggestion = (s: {name: string; phone: string}) => {
+    setClientName(s.name)
+    setClientPhone(s.phone)
+    setNameSugs([])
+    setPhoneSugs([])
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -150,19 +192,45 @@ export default function CarForm() {
         <div className="border-t pt-4">
           <h3 className="font-medium mb-3">{t('car.request_client')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.client_name')}</label>
-              <input value={clientName} onChange={e => setClientName(e.target.value)}
+              <input value={clientName} onChange={e => handleNameInput(e.target.value)}
+                onBlur={() => setTimeout(() => setNameSugs([]), 200)}
+                onKeyDown={e => { if (e.key === 'Escape') setNameSugs([]) }}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              {nameSugs.length > 0 && (
+                <ul className="absolute z-10 left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                  {nameSugs.map((s, i) => (
+                    <li key={i} onClick={() => pickSuggestion(s)}
+                      className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm flex justify-between gap-2">
+                      <span>{highlightText(s.name, clientName)}</span>
+                      <span className="text-gray-400 text-xs ltr">{s.phone}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.client_phone')}</label>
-              <div className="flex gap-2">
-                <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+              <div className="relative flex gap-2">
+                <input value={clientPhone} onChange={e => handlePhoneInput(e.target.value)}
+                  onBlur={() => setTimeout(() => setPhoneSugs([]), 200)}
+                  onKeyDown={e => { if (e.key === 'Escape') setPhoneSugs([]) }}
                   className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 {('contacts' in navigator) && (
                   <button type="button" onClick={pickContact} title={t('car.pick_contact')}
                     className="px-3 py-3 bg-gray-100 border rounded-lg hover:bg-gray-200 transition-colors">📇</button>
+                )}
+                {phoneSugs.length > 0 && (
+                  <ul className="absolute z-10 left-0 right-0 top-full bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                    {phoneSugs.map((s, i) => (
+                      <li key={i} onClick={() => pickSuggestion(s)}
+                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm flex justify-between gap-2">
+                        <span>{highlightText(s.phone, clientPhone)}</span>
+                        <span className="text-gray-400 text-xs truncate max-w-[120px]">{s.name}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>
