@@ -88,14 +88,15 @@
     "deposit_02_required": "يجب إدخال الدفعة رقم 2 قبل نقل إلى تحضير شحن",
     "undo_confirm": "التراجع عن التأكيد",
     "evidence_url": "رابط الإثبات",
-    "evidence_required": "يرجى إدخال رابط الإثبات قبل نقل إلى شراء",
+    "evidence_required": "يرجى رفع ملف الإثبات قبل نقل إلى شراء",
     "attachments": "المرفقات",
     "attachment_name": "اسم المرفق",
     "attachment_url": "رابط المرفق",
     "add_attachment": "إضافة مرفق",
     "load_error": "فشل تحميل البيانات",
     "uploading": "جاري الرفع...",
-    "evidence_uploaded": "تم رفع الإثبات"
+    "evidence_uploaded": "تم رفع الإثبات",
+    "pick_contact": "اختيار من جهات الاتصال"
   },
   "users": {
     "title": "إدارة المستخدمين",

@@ -79,6 +79,19 @@ export default function CarForm() {
     }
   }
 
+  const pickContact = async () => {
+    if (!('contacts' in navigator)) return
+    try {
+      const props = ['name', 'tel'] as const
+      const contacts = await (navigator as any).contacts.select(props, { multiple: false })
+      if (contacts && contacts.length > 0) {
+        const c = contacts[0]
+        if (c.name && !clientName) setClientName(c.name)
+        if (c.tel && c.tel.length > 0) setClientPhone(c.tel[0])
+      }
+    } catch { /* user cancelled or API not available */ }
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">{isEdit ? t('car.edit') : t('car.add')}</h1>
@@ -144,8 +157,12 @@ export default function CarForm() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.client_phone')}</label>
-              <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <div className="flex gap-2">
+                <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+                  className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                <button type="button" onClick={pickContact} title={t('car.pick_contact')}
+                  className="px-3 py-3 bg-gray-100 border rounded-lg hover:bg-gray-200 transition-colors">📇</button>
+              </div>
             </div>
           </div>
         </div>
