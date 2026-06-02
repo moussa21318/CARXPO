@@ -28,6 +28,7 @@ export default function CarDetails() {
   const [evidencePublicUrl, setEvidencePublicUrl] = useState('')
   const [newAttachFile, setNewAttachFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -107,10 +108,14 @@ export default function CarDetails() {
   const handleUploadEvidence = async () => {
     if (!id || !evidenceFile) return
     setUploading(true)
+    setUploadError('')
     try {
       const { publicUrl } = await uploadFile('car_attachments', `evidence/${id}`, evidenceFile)
       setEvidencePublicUrl(publicUrl)
       setEvidenceFile(null)
+      loadData()
+    } catch (err: any) {
+      setUploadError(err?.message || t('app.error'))
     } finally {
       setUploading(false)
     }
@@ -119,11 +124,14 @@ export default function CarDetails() {
   const handleAddAttachment = async () => {
     if (!id || !newAttachFile) return
     setUploading(true)
+    setUploadError('')
     try {
       const { storagePath } = await uploadFile('car_attachments', `attachments/${id}`, newAttachFile)
       await addAttachment({ car_id: id, name: newAttachFile.name, storage_path: storagePath })
       setNewAttachFile(null)
       loadData()
+    } catch (err: any) {
+      setUploadError(err?.message || t('app.error'))
     } finally {
       setUploading(false)
     }
@@ -213,14 +221,20 @@ export default function CarDetails() {
               <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
                 <label className="block text-sm font-medium text-blue-800 dark:text-blue-300">{t('car.evidence')}</label>
                 <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                  <input type="file" onChange={e => setEvidenceFile(e.target.files?.[0] || null)}
-                    accept="image/*,.pdf"
-                    className="flex-1 text-sm" />
+                  <label className="flex-1 flex items-center gap-2 px-3 py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors text-sm text-gray-500 dark:text-gray-400">
+                    <span>📎</span>
+                    <span className={evidenceFile ? 'text-gray-800 dark:text-gray-200 font-medium' : ''}>
+                      {evidenceFile ? evidenceFile.name : t('car.select_file')}
+                    </span>
+                    <input type="file" onChange={e => setEvidenceFile(e.target.files?.[0] || null)}
+                      accept="image/*,.pdf" className="hidden" />
+                  </label>
                   <button onClick={handleUploadEvidence} disabled={!evidenceFile || uploading}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm whitespace-nowrap">
                     {uploading ? t('car.uploading') : t('car.upload_evidence')}
                   </button>
                 </div>
+                {uploadError && <p className="text-sm text-red-600 dark:text-red-400">{uploadError}</p>}
                 {evidencePublicUrl ? (
                   <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
                     <span>✓ {t('car.evidence_uploaded')}</span>
@@ -322,14 +336,21 @@ export default function CarDetails() {
         )}
         {canEdit && (
           <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <input type="file" onChange={e => setNewAttachFile(e.target.files?.[0] || null)}
-              className="flex-1 text-sm" />
+            <label className="flex-1 flex items-center gap-2 px-3 py-2.5 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors text-sm text-gray-500 dark:text-gray-400">
+              <span>📎</span>
+              <span className={newAttachFile ? 'text-gray-800 dark:text-gray-200 font-medium' : ''}>
+                {newAttachFile ? newAttachFile.name : t('car.select_file')}
+              </span>
+              <input type="file" onChange={e => setNewAttachFile(e.target.files?.[0] || null)}
+                className="hidden" />
+            </label>
             <button onClick={handleAddAttachment} disabled={!newAttachFile || uploading}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm whitespace-nowrap">
               {uploading ? t('car.uploading') : t('car.add_attachment')}
             </button>
           </div>
         )}
+        {uploadError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{uploadError}</p>}
       </div>
 
       {(car.current_stage === 'shipping_prep' || car.current_stage === 'shipping') && (

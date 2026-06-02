@@ -98,6 +98,7 @@
     "attachment_url": "Attachment URL",
     "add_attachment": "Add Attachment",
     "load_error": "Failed to load data",
+    "select_file": "Choose a file...",
     "uploading": "Uploading...",
     "evidence_uploaded": "Evidence uploaded",
     "pick_contact": "Pick from contacts",

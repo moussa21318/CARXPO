@@ -98,6 +98,7 @@
     "attachment_url": "URL de la pièce",
     "add_attachment": "Ajouter une pièce",
     "load_error": "Échec du chargement",
+    "select_file": "Choisir un fichier...",
     "uploading": "Téléchargement...",
     "evidence_uploaded": "Preuve téléchargée",
     "pick_contact": "Choisir depuis les contacts",
