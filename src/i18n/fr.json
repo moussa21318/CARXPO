@@ -100,7 +100,10 @@
     "load_error": "Échec du chargement",
     "uploading": "Téléchargement...",
     "evidence_uploaded": "Preuve téléchargée",
-    "pick_contact": "Choisir depuis les contacts"
+    "pick_contact": "Choisir depuis les contacts",
+    "delete_car": "Supprimer",
+    "delete_confirm_title": "Confirmer la suppression",
+    "delete_confirm_text": "Êtes-vous sûr de vouloir supprimer cette voiture ? Cette action est irréversible."
   },
   "users": {
     "title": "Gestion des utilisateurs",

@@ -1,9 +1,9 @@
 ﻿import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import {
-  getCar, updateCar, getCarFees, upsertCarFees,
+  getCar, updateCar, deleteCar, getCarFees, upsertCarFees,
   getStageLogs, moveToStage,
   getRequestClient, getCustomer, upsertCustomer,
   getAttachments, addAttachment, deleteAttachment,
@@ -15,6 +15,7 @@ import { formatPrice } from '../utils/format'
 export default function CarDetails() {
   const { t } = useTranslation()
   const { id } = useParams()
+  const navigate = useNavigate()
   const { user, canEdit } = useAuth()
 
   const [car, setCar] = useState<Car | null>(null)
@@ -29,6 +30,7 @@ export default function CarDetails() {
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [modalLp, setModalLp] = useState('')
   const [modalMy, setModalMy] = useState(0)
   const [modalPrice, setModalPrice] = useState(0)
@@ -70,6 +72,12 @@ export default function CarDetails() {
     })
     setConfirmOpen(false)
     loadData()
+  }
+
+  const handleDeleteCar = async () => {
+    if (!id) return
+    await deleteCar(id)
+    navigate('/cars')
   }
 
   const handleUnconfirm = async () => {
@@ -145,6 +153,12 @@ export default function CarDetails() {
           <Link to={`/cars/${id}/edit`} className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">
             {t('app.edit')}
           </Link>
+        )}
+        {user?.role === 'admin' && (
+          <button onClick={() => setDeleteConfirmOpen(true)}
+            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 text-sm">
+            🗑 {t('car.delete_car')}
+          </button>
         )}
       </div>
 
@@ -395,6 +409,30 @@ export default function CarDetails() {
               <button onClick={handleConfirmSave}
                 className="flex-1 p-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm transition-colors">
                 {t('app.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setDeleteConfirmOpen(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('car.delete_confirm_title')}</h2>
+            <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+              <span className="text-lg">⚠️</span>
+              <p>{t('car.delete_confirm_text')}</p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setDeleteConfirmOpen(false)}
+                className="flex-1 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm transition-colors">
+                {t('app.cancel')}
+              </button>
+              <button onClick={handleDeleteCar}
+                className="flex-1 p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm transition-colors">
+                {t('car.delete_car')}
               </button>
             </div>
           </div>

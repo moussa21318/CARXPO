@@ -100,7 +100,10 @@
     "load_error": "فشل تحميل البيانات",
     "uploading": "جاري الرفع...",
     "evidence_uploaded": "تم رفع الإثبات",
-    "pick_contact": "اختيار من جهات الاتصال"
+    "pick_contact": "اختيار من جهات الاتصال",
+    "delete_car": "حذف الملف",
+    "delete_confirm_title": "تأكيد الحذف",
+    "delete_confirm_text": "هل أنت متأكد من حذف هذا الملف؟ هذا الإجراء لا يمكن التراجع عنه."
   },
   "users": {
     "title": "إدارة المستخدمين",

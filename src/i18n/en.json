@@ -100,7 +100,10 @@
     "load_error": "Failed to load data",
     "uploading": "Uploading...",
     "evidence_uploaded": "Evidence uploaded",
-    "pick_contact": "Pick from contacts"
+    "pick_contact": "Pick from contacts",
+    "delete_car": "Delete Car",
+    "delete_confirm_title": "Confirm Deletion",
+    "delete_confirm_text": "Are you sure you want to delete this car? This action cannot be undone."
   },
   "users": {
     "title": "User Management",
