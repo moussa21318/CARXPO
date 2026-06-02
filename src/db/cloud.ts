@@ -101,11 +101,39 @@ export async function updateCar(id: string, payload: Partial<Car>): Promise<Car>
 }
 
 export async function deleteCar(id: string): Promise<void> {
+  const storagePaths: string[] = []
+
+  const attachments = await getAttachments(id)
+  storagePaths.push(...attachments.map(a => a.storage_path))
+
+  const { data: evFiles } = await getClient().storage.from('car_attachments').list(`evidence/${id}`)
+  if (evFiles) storagePaths.push(...evFiles.map(f => `evidence/${id}/${f.name}`))
+
+  if (storagePaths.length > 0) {
+    const { error: delErr } = await getClient().storage.from('car_attachments').remove(storagePaths)
+    if (delErr) handleError('deleteCar storage cleanup failed', delErr)
+  }
+
   const { error } = await getClient().from('cars').delete().eq('id', id)
   if (error) handleError('deleteCar failed', error)
 }
 
 export async function deleteCars(ids: string[]): Promise<void> {
+  const storagePaths: string[] = []
+
+  for (const id of ids) {
+    const attachments = await getAttachments(id)
+    storagePaths.push(...attachments.map(a => a.storage_path))
+
+    const { data: evFiles } = await getClient().storage.from('car_attachments').list(`evidence/${id}`)
+    if (evFiles) storagePaths.push(...evFiles.map(f => `evidence/${id}/${f.name}`))
+  }
+
+  if (storagePaths.length > 0) {
+    const { error: delErr } = await getClient().storage.from('car_attachments').remove(storagePaths)
+    if (delErr) handleError('deleteCars storage cleanup failed', delErr)
+  }
+
   const { error } = await getClient().from('cars').delete().in('id', ids)
   if (error) handleError('deleteCars failed', error)
 }
