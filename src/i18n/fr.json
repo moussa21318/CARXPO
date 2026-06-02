@@ -10,7 +10,9 @@
     "confirm": "Confirmer",
     "search": "Rechercher...",
     "no_data": "Aucune donnée",
-    "details": "Détails"
+    "details": "Détails",
+    "yes": "Oui",
+    "no": "Non"
   },
   "nav": {
     "dashboard": "Tableau de bord",

@@ -48,6 +48,7 @@ export default function CarsList() {
             <div key={c.id} className="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-2 hover:shadow-md transition-shadow">
               <Link to={`/cars/${c.id}`} className="text-blue-600 hover:underline font-semibold text-lg leading-tight">{c.name}</Link>
               <div className="text-sm text-gray-500">{c.model_year}</div>
+              <div className="text-xs text-gray-400">{c.license_plate || c.serial_number?.slice(-8) || '-'}</div>
               <div className="text-sm font-medium">{formatPrice(c.initial_price)}</div>
               <div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
