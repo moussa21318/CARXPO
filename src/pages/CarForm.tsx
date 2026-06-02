@@ -55,7 +55,7 @@ export default function CarForm() {
 
   const highlightText = (text: string, query: string) => {
     if (!query) return text
-    const idx = text.indexOf(query)
+    const idx = text.toLowerCase().indexOf(query.toLowerCase())
     if (idx === -1) return text
     return (
       <>
@@ -69,7 +69,7 @@ export default function CarForm() {
   const handleNameInput = (val: string) => {
     setClientName(val)
     if (!val) { setNameSugs([]); return }
-    setNameSugs(allClientsRef.current.filter(c => c.name.includes(val)))
+    setNameSugs(allClientsRef.current.filter(c => c.name.toLowerCase().includes(val.toLowerCase())))
   }
 
   const handlePhoneInput = (val: string) => {
