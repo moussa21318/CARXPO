@@ -103,7 +103,11 @@
     "pick_contact": "اختيار من جهات الاتصال",
     "delete_car": "حذف الملف",
     "delete_confirm_title": "تأكيد الحذف",
-    "delete_confirm_text": "هل أنت متأكد من حذف هذا الملف؟ هذا الإجراء لا يمكن التراجع عنه."
+    "delete_confirm_text": "هل أنت متأكد من حذف هذا الملف؟ هذا الإجراء لا يمكن التراجع عنه.",
+    "search_placeholder": "بحث باسم السيارة أو الرقم التسلسلي...",
+    "select_all": "تحديد الكل",
+    "delete_selected": "حذف المحدد ({{count}})",
+    "delete_multiple_confirm": "هل أنت متأكد من حذف {{count}} سيارات؟"
   },
   "users": {
     "title": "إدارة المستخدمين",
@@ -162,7 +166,9 @@
     "title": "لوحة القيادة",
     "total_cars": "إجمالي السيارات",
     "cars_by_stage": "السيارات حسب المرحلة",
-    "recent_activity": "آخر النشاطات"
+    "recent_activity": "آخر النشاطات",
+    "search_placeholder": "ابحث عن سيارة...",
+    "quick_actions": "إجراءات سريعة"
   },
   "edit_request": {
     "title": "طلب تعديل",
@@ -172,5 +178,9 @@
     "reject": "رفض",
     "pending": "قيد الانتظار",
     "review_notes": "ملاحظات المراجعة"
+  },
+  "theme": {
+    "dark": "داكن",
+    "light": "فاتح"
   }
 }

@@ -150,23 +150,23 @@ export default function ExportPage() {
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">{t('export.title')}</h1>
       {!canEdit ? (
-        <p className="text-gray-500">{t('auth.no_permission')}</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('auth.no_permission')}</p>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-6">
           <div className="flex items-center gap-4">
             <button onClick={loadData} disabled={loading}
               className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50">
               {loading ? t('app.loading') : t('export.load')}
             </button>
-            {cars.length > 0 && <span className="text-sm text-gray-500">{cars.length} {t('export.records')}</span>}
+            {cars.length > 0 && <span className="text-sm text-gray-500 dark:text-gray-400">{cars.length} {t('export.records')}</span>}
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium">{t('export.columns')}</h3>
               <div className="flex gap-2">
-                <button onClick={selectAll} className="text-xs px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">{t('export.select_all')}</button>
-                <button onClick={deselectAll} className="text-xs px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">{t('export.deselect_all')}</button>
+                <button onClick={selectAll} className="text-xs px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200">{t('export.select_all')}</button>
+                <button onClick={deselectAll} className="text-xs px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200">{t('export.deselect_all')}</button>
               </div>
             </div>
             <div className="space-y-4 max-h-96 overflow-y-auto border rounded-lg p-4">
@@ -175,11 +175,11 @@ export default function ExportPage() {
                 const labelKey = groupCols[0]?.groupLabelKey || ''
                 return (
                   <div key={g}>
-                    <div className="flex items-center justify-between border-b pb-1 mb-2">
-                      <h4 className="text-sm font-semibold text-gray-700">{t(labelKey)}</h4>
+                    <div className="flex items-center justify-between border-b dark:border-gray-700 pb-1 mb-2">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t(labelKey)}</h4>
                       <div className="flex gap-2">
-                        <button onClick={() => selectGroup(g)} className="text-xs text-blue-600 hover:underline">{t('export.select_all')}</button>
-                        <button onClick={() => deselectGroup(g)} className="text-xs text-gray-500 hover:underline">{t('export.deselect_all')}</button>
+                        <button onClick={() => selectGroup(g)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">{t('export.select_all')}</button>
+                        <button onClick={() => deselectGroup(g)} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">{t('export.deselect_all')}</button>
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -187,16 +187,16 @@ export default function ExportPage() {
                         const col = groupCols.find(c => c.key === key)
                         if (!col) return null
                         return (
-                          <div key={key} className="flex items-center gap-2 py-1 px-2 hover:bg-gray-50 rounded min-w-0">
+                          <div key={key} className="flex items-center gap-2 py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 rounded min-w-0">
                             <input type="checkbox" checked={selected.includes(key)}
                               onChange={() => toggleColumn(key)} className="w-4 h-4 flex-shrink-0" />
                             <span className="flex-1 text-sm truncate min-w-0">{t(col.labelKey)}</span>
                             <button onClick={() => moveUp(key)}
                               disabled={order.indexOf(key) === 0}
-                              className="px-2 py-0.5 text-xs bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-30 flex-shrink-0">↑</button>
+                              className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 disabled:opacity-30 flex-shrink-0">↑</button>
                             <button onClick={() => moveDown(key)}
                               disabled={order.indexOf(key) >= order.length - 1}
-                              className="px-2 py-0.5 text-xs bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-30 flex-shrink-0">↓</button>
+                              className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 disabled:opacity-30 flex-shrink-0">↓</button>
                           </div>
                         )
                       })}
@@ -213,7 +213,7 @@ export default function ExportPage() {
                 <h3 className="font-medium mb-3">{t('export.preview')}</h3>
                 <div className="overflow-x-auto max-h-72 overflow-y-auto border rounded-lg">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50 sticky top-0">
+                    <thead className="bg-gray-50 dark:bg-gray-800/50 sticky top-0">
                       <tr>
                         {order.filter(k => selected.includes(k)).map(key => {
                           const col = GROUPS.find(c => c.key === key)
@@ -223,7 +223,7 @@ export default function ExportPage() {
                     </thead>
                     <tbody>
                       {preview.map((row, i) => (
-                        <tr key={i} className="border-t hover:bg-gray-50">
+                        <tr key={i} className="border-t hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50">
                           {row.map((cell, j) => <td key={j} className="p-2 border">{String(cell)}</td>)}
                         </tr>
                       ))}
@@ -240,7 +240,7 @@ export default function ExportPage() {
           )}
 
           {cars.length === 0 && !loading && (
-            <p className="text-gray-400 text-center py-4">{t('export.load_hint')}</p>
+            <p className="text-gray-400 dark:text-gray-500 text-center py-4">{t('export.load_hint')}</p>
           )}
         </div>
       )}

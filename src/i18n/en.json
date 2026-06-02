@@ -103,7 +103,11 @@
     "pick_contact": "Pick from contacts",
     "delete_car": "Delete Car",
     "delete_confirm_title": "Confirm Deletion",
-    "delete_confirm_text": "Are you sure you want to delete this car? This action cannot be undone."
+    "delete_confirm_text": "Are you sure you want to delete this car? This action cannot be undone.",
+    "search_placeholder": "Search by name or serial number...",
+    "select_all": "Select all",
+    "delete_selected": "Delete selected ({{count}})",
+    "delete_multiple_confirm": "Delete {{count}} cars?"
   },
   "users": {
     "title": "User Management",
@@ -162,7 +166,9 @@
     "title": "Dashboard",
     "total_cars": "Total Cars",
     "cars_by_stage": "Cars by Stage",
-    "recent_activity": "Recent Activity"
+    "recent_activity": "Recent Activity",
+    "search_placeholder": "Search cars...",
+    "quick_actions": "Quick Actions"
   },
   "edit_request": {
     "title": "Edit Request",
@@ -172,5 +178,9 @@
     "reject": "Reject",
     "pending": "Pending",
     "review_notes": "Review Notes"
+  },
+  "theme": {
+    "dark": "Dark",
+    "light": "Light"
   }
 }

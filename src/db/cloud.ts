@@ -105,6 +105,11 @@ export async function deleteCar(id: string): Promise<void> {
   if (error) handleError('deleteCar failed', error)
 }
 
+export async function deleteCars(ids: string[]): Promise<void> {
+  const { error } = await getClient().from('cars').delete().in('id', ids)
+  if (error) handleError('deleteCars failed', error)
+}
+
 // --- Fees ---
 export async function getAllCarFees(): Promise<CarFees[]> {
   try {

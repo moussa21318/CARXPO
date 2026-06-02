@@ -21,18 +21,18 @@ export default function LoginPage() {
 
   return (
     <div dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-2">{t('app.name')}</h1>
-        <p className="text-center text-gray-500 mb-8">{t('auth.login')}</p>
+        <p className="text-center text-gray-500 dark:text-gray-400 mb-8">{t('auth.login')}</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.username')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('auth.username')}</label>
             <input value={username} onChange={e => setUsername(e.target.value)}
               className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               required />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('auth.password')}</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}
               className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               required />
@@ -45,7 +45,7 @@ export default function LoginPage() {
         <div className="flex justify-center gap-2 mt-6">
           {(['ar', 'fr', 'en'] as const).map(lang => (
             <button key={lang} onClick={() => { i18n.changeLanguage(lang); localStorage.setItem('carxpo_lang', lang) }}
-              className={`px-3 py-1 text-sm rounded ${i18n.language === lang ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+              className={`px-3 py-1 text-sm rounded ${i18n.language === lang ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600'}`}>
               {lang === 'ar' ? 'العربية' : lang === 'fr' ? 'Français' : 'English'}
             </button>
           ))}

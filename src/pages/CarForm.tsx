@@ -137,97 +137,97 @@ export default function CarForm() {
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">{isEdit ? t('car.edit') : t('car.add')}</h1>
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-        {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{error}</div>}
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-4">
+        {error && <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-300">{error}</div>}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.name')} *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.name')} *</label>
           <input value={name} onChange={e => setName(e.target.value)} required
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.model_year')} *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.model_year')} *</label>
           <select value={modelYear} onChange={e => setModelYear(Number(e.target.value))}
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             {MODEL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         {isEdit && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.serial_number')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.serial_number')}</label>
               <input value={serialNumber} onChange={e => setSerialNumber(e.target.value)} maxLength={17}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono" />
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.license_plate')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.license_plate')}</label>
               <input value={licensePlate} onChange={e => setLicensePlate(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.seller_phone')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.seller_phone')}</label>
               <input value={sellerPhone} onChange={e => setSellerPhone(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.initial_price')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.initial_price')}</label>
               <input type="number" value={initialPrice || ''} onChange={e => setInitialPrice(Number(e.target.value))} min={0}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.notes')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.notes')}</label>
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             {user?.role === 'admin' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.current_stage')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.current_stage')}</label>
                 <select value={currentStage} onChange={e => setCurrentStage(e.target.value)}
-                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                  className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                   {STAGE_ORDER.map(s => <option key={s} value={s}>{t(STAGE_LABELS[s])}</option>)}
                 </select>
               </div>
             )}
           </>
         )}
-        <div className="border-t pt-4">
+        <div className="border-t dark:border-gray-700 pt-4">
           <h3 className="font-medium mb-3">{t('car.request_client')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.client_name')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.client_name')}</label>
               <input value={clientName} onChange={e => handleNameInput(e.target.value)}
                 onBlur={() => setTimeout(() => setNameSugs([]), 200)}
                 onKeyDown={e => { if (e.key === 'Escape') setNameSugs([]) }}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
               {nameSugs.length > 0 && (
-                <ul className="absolute z-10 left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                <ul className="absolute z-10 left-0 right-0 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
                   {nameSugs.map((s, i) => (
                     <li key={i} onClick={() => pickSuggestion(s)}
-                      className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm flex justify-between gap-2">
+                      className="px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm flex justify-between gap-2">
                       <span>{highlightText(s.name, clientName)}</span>
-                      <span className="text-gray-400 text-xs ltr">{s.phone}</span>
+                      <span className="text-gray-400 dark:text-gray-500 text-xs ltr">{s.phone}</span>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.client_phone')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.client_phone')}</label>
               <div className="relative flex gap-2">
                 <input value={clientPhone} onChange={e => handlePhoneInput(e.target.value)}
                   onBlur={() => setTimeout(() => setPhoneSugs([]), 200)}
                   onKeyDown={e => { if (e.key === 'Escape') setPhoneSugs([]) }}
-                  className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                  className="flex-1 p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 {('contacts' in navigator) && (
                   <button type="button" onClick={pickContact} title={t('car.pick_contact')}
-                    className="px-3 py-3 bg-gray-100 border rounded-lg hover:bg-gray-200 transition-colors">📇</button>
+                    className="px-3 py-3 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">📇</button>
                 )}
                 {phoneSugs.length > 0 && (
-                  <ul className="absolute z-10 left-0 right-0 top-full bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                  <ul className="absolute z-10 left-0 right-0 top-full bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
                     {phoneSugs.map((s, i) => (
                       <li key={i} onClick={() => pickSuggestion(s)}
-                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm flex justify-between gap-2">
+                        className="px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm flex justify-between gap-2">
                         <span>{highlightText(s.phone, clientPhone)}</span>
-                        <span className="text-gray-400 text-xs truncate max-w-[120px]">{s.name}</span>
+                        <span className="text-gray-400 dark:text-gray-500 text-xs truncate max-w-[120px]">{s.name}</span>
                       </li>
                     ))}
                   </ul>
@@ -242,7 +242,7 @@ export default function CarForm() {
             {saving ? t('app.loading') : t('app.save')}
           </button>
           <button type="button" onClick={() => navigate(-1)}
-            className="bg-gray-200 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors">
+            className="bg-gray-200 dark:bg-gray-600 px-6 py-3 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
             {t('app.cancel')}
           </button>
         </div>

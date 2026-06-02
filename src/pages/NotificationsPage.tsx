@@ -35,24 +35,24 @@ export default function NotificationsPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">{t('notifications.title')}</h1>
         {notifications.some(n => !n.is_read) && (
-          <button onClick={handleMarkAll} className="text-blue-600 hover:underline text-sm">{t('notifications.mark_all_read')}</button>
+          <button onClick={handleMarkAll} className="text-blue-600 hover:underline dark:text-blue-400 text-sm">{t('notifications.mark_all_read')}</button>
         )}
       </div>
       {loading ? (
-        <div className="text-center py-8 text-gray-500">{t('app.loading')}</div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('app.loading')}</div>
       ) : notifications.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">{t('notifications.no_notifications')}</div>
+        <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('notifications.no_notifications')}</div>
       ) : (
         <div className="space-y-3">
           {notifications.map(n => (
             <div key={n.id} onClick={() => handleMarkRead(n.id)}
-              className={`bg-white rounded-xl shadow-sm p-4 cursor-pointer transition-colors hover:bg-gray-50 ${!n.is_read ? 'border-r-4 border-blue-500' : ''}`}>
+              className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${!n.is_read ? 'border-r-4 border-blue-500' : ''}`}>
               <div className="flex justify-between items-start">
                 <div>
-                  <p className={`font-medium ${!n.is_read ? 'text-blue-600' : 'text-gray-800'}`}>{n.title}</p>
-                  <p className="text-sm text-gray-500 mt-1">{n.body}</p>
+                  <p className={`font-medium ${!n.is_read ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-100'}`}>{n.title}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{n.body}</p>
                 </div>
-                <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(n.created_at).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{new Date(n.created_at).toLocaleDateString()}</span>
               </div>
             </div>
           ))}
