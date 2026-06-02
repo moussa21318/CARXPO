@@ -254,7 +254,7 @@ export default function CarDetails() {
           <div><span className="text-gray-500">{t('car.initial_price')}:</span> <span>{formatPrice(car.initial_price)}</span></div>
           <div><span className="text-gray-500">{t('car.current_stage')}:</span> <span>{t(STAGE_LABELS[car.current_stage])}</span></div>
           <div><span className="text-gray-500">{t('car.confirmed')}:</span>
-            <span className={car.confirmed ? 'text-green-600' : 'text-gray-400'}>{car.confirmed ? '✓' : '✗'}</span>
+            <span className={car.confirmed ? 'text-green-600' : 'text-gray-400'}>{car.confirmed ? t('app.yes') : t('app.no')}</span>
           </div>
         </div>
       </div>

@@ -75,7 +75,7 @@ export default function ExportPage() {
         const col = GROUPS.find(c => c.key === key)
         let val = col ? col.getValue(row.car, row.rc, row.cust, row.fees) : ''
         if (key === 'current_stage' && val) val = t(STAGE_LABELS[val as CarStage])
-        if (key === 'confirmed') val = val ? '✓' : '✗'
+        if (key === 'confirmed') val = val ? t('app.yes') : t('app.no')
         return val ?? ''
       })))
     } finally {
