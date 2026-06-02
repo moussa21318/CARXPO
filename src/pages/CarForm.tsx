@@ -89,7 +89,7 @@ export default function CarForm() {
         if (c.name && !clientName) setClientName(c.name)
         if (c.tel && c.tel.length > 0) setClientPhone(c.tel[0])
       }
-    } catch { /* user cancelled or API not available */ }
+    } catch (err) { console.error('Contact picker error:', err) }
   }
 
   return (
@@ -149,7 +149,7 @@ export default function CarForm() {
         )}
         <div className="border-t pt-4">
           <h3 className="font-medium mb-3">{t('car.request_client')}</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.client_name')}</label>
               <input value={clientName} onChange={e => setClientName(e.target.value)}
@@ -160,8 +160,10 @@ export default function CarForm() {
               <div className="flex gap-2">
                 <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
                   className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                <button type="button" onClick={pickContact} title={t('car.pick_contact')}
-                  className="px-3 py-3 bg-gray-100 border rounded-lg hover:bg-gray-200 transition-colors">📇</button>
+                {('contacts' in navigator) && (
+                  <button type="button" onClick={pickContact} title={t('car.pick_contact')}
+                    className="px-3 py-3 bg-gray-100 border rounded-lg hover:bg-gray-200 transition-colors">📇</button>
+                )}
               </div>
             </div>
           </div>
