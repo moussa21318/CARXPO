@@ -21,7 +21,9 @@
     "notifications": "الإشعارات",
     "activity_log": "سجل النشاطات",
     "export": "تصدير Excel",
-    "logout": "تسجيل خروج"
+    "logout": "تسجيل خروج",
+    "view_table": "قائمة",
+    "view_cards": "بطاقات"
   },
   "auth": {
     "login": "تسجيل الدخول",

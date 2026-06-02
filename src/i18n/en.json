@@ -21,7 +21,9 @@
     "notifications": "Notifications",
     "activity_log": "Activity Log",
     "export": "Export Excel",
-    "logout": "Logout"
+    "logout": "Logout",
+    "view_table": "Table",
+    "view_cards": "Cards"
   },
   "auth": {
     "login": "Login",

@@ -21,7 +21,9 @@
     "notifications": "Notifications",
     "activity_log": "Journal d'activité",
     "export": "Exporter Excel",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "view_table": "Tableau",
+    "view_cards": "Cartes"
   },
   "auth": {
     "login": "Connexion",
