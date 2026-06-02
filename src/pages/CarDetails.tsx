@@ -9,7 +9,7 @@ import {
   getAttachments, addAttachment, deleteAttachment,
 } from '../db/cloud'
 import { uploadFile } from '../utils/upload'
-import { STAGE_ORDER, STAGE_LABELS, type Car, type CarFees, type CarStage } from '../types'
+import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, type Car, type CarFees, type CarStage } from '../types'
 import { formatPrice } from '../utils/format'
 
 export default function CarDetails() {
@@ -28,6 +28,10 @@ export default function CarDetails() {
   const [newAttachFile, setNewAttachFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [modalLp, setModalLp] = useState('')
+  const [modalMy, setModalMy] = useState(0)
+  const [modalPrice, setModalPrice] = useState(0)
 
   const loadData = async () => {
     if (!id) return
@@ -47,9 +51,24 @@ export default function CarDetails() {
 
   useEffect(() => { loadData() }, [id])
 
-  const handleConfirm = async () => {
+  const handleOpenConfirm = () => {
+    if (!car) return
+    setModalLp(car.license_plate || '')
+    setModalMy(car.model_year)
+    setModalPrice(car.initial_price)
+    setConfirmOpen(true)
+  }
+
+  const handleConfirmSave = async () => {
     if (!id || !user || !car) return
-    await updateCar(id, { confirmed: true, updated_by: user.id })
+    await updateCar(id, {
+      license_plate: modalLp || null,
+      model_year: modalMy,
+      initial_price: modalPrice,
+      confirmed: true,
+      updated_by: user.id,
+    })
+    setConfirmOpen(false)
     loadData()
   }
 
@@ -146,7 +165,7 @@ export default function CarDetails() {
         {canEdit && car.current_stage === 'request' && !car.confirmed && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-yellow-700 mb-3">{t('car.confirm_car_details')}</p>
-            <button onClick={handleConfirm} className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 text-sm">
+            <button onClick={handleOpenConfirm} className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 text-sm">
               {t('car.confirm_order')}
             </button>
           </div>
@@ -340,6 +359,47 @@ export default function CarDetails() {
           </div>
         )}
       </div>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setConfirmOpen(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('car.confirm_car_details')}</h2>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.license_plate')}</label>
+              <input value={modalLp} onChange={e => setModalLp(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.model_year')}</label>
+              <select value={modalMy} onChange={e => setModalMy(Number(e.target.value))}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                {MODEL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('car.initial_price')} (₩)</label>
+              <input type="number" value={modalPrice || ''} onChange={e => setModalPrice(Number(e.target.value))} min={0}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setConfirmOpen(false)}
+                className="flex-1 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm transition-colors">
+                {t('app.cancel')}
+              </button>
+              <button onClick={handleConfirmSave}
+                className="flex-1 p-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm transition-colors">
+                {t('app.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
