@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type {
   User, Car, CarFees, CarStageLog, RequestClient, Customer,
-  EditRequest, ChangeLog, Notification, CarStage, CarAttachment,
+  EditRequest, ChangeLog, Notification, CarStage, CarAttachment, DeleteRequest,
 } from '../types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -252,6 +252,42 @@ export async function reviewEditRequest(id: string, status: 'approved' | 'reject
   }).eq('id', id).select().single()
   if (error) handleError('reviewEditRequest failed', error)
   return data as EditRequest
+}
+
+// --- Delete Requests ---
+export async function getDeleteRequests(carId?: string): Promise<DeleteRequest[]> {
+  try {
+    let q = getClient().from('delete_requests').select('*').order('created_at', { ascending: false })
+    if (carId) q = q.eq('car_id', carId)
+    const { data, error } = await q
+    if (error) return []
+    return (data as DeleteRequest[]) || []
+  } catch { return [] }
+}
+
+export async function createDeleteRequest(payload: Partial<DeleteRequest>): Promise<DeleteRequest> {
+  const { data, error } = await getClient().from('delete_requests').insert(payload).select().single()
+  if (error) handleError('createDeleteRequest failed', error)
+  return data as DeleteRequest
+}
+
+export async function reviewDeleteRequest(id: string, status: 'approved' | 'rejected', reviewedBy: string, reviewNotes?: string): Promise<void> {
+  const { error: updateErr } = await getClient().from('delete_requests').update({
+    status, reviewed_by: reviewedBy, review_notes: reviewNotes || null, reviewed_at: new Date().toISOString(),
+  }).eq('id', id)
+  if (updateErr) handleError('reviewDeleteRequest failed', updateErr)
+  if (status === 'approved') {
+    const req = await getDeleteRequestsForReview(id)
+    if (req) await deleteCar(req.car_id)
+  }
+}
+
+async function getDeleteRequestsForReview(id: string): Promise<DeleteRequest | null> {
+  try {
+    const { data, error } = await getClient().from('delete_requests').select('*').eq('id', id).maybeSingle()
+    if (error) return null
+    return data as DeleteRequest | null
+  } catch { return null }
 }
 
 // --- Change Log ---

@@ -1,6 +1,7 @@
 export type CarStage = 'request' | 'deposit' | 'purchase' | 'shipping_prep' | 'shipping'
 export type UserRole = 'admin' | 'employee'
 export type EditRequestStatus = 'pending' | 'approved' | 'rejected'
+export type DeleteRequestStatus = 'pending' | 'approved' | 'rejected'
 export type NotificationType = 'car_added' | 'car_updated' | 'car_deleted' | 'edit_requested' | 'edit_approved' | 'edit_rejected' | 'stage_changed' | 'car_confirmed'
 export type Lang = 'ar' | 'fr' | 'en'
 
@@ -79,6 +80,18 @@ export interface EditRequest {
   new_data: any
   reason: string
   status: EditRequestStatus
+  reviewed_by: string | null
+  review_notes: string | null
+  created_at: string
+  reviewed_at: string | null
+}
+
+export interface DeleteRequest {
+  id: string
+  car_id: string
+  requested_by: string
+  reason: string
+  status: DeleteRequestStatus
   reviewed_by: string | null
   review_notes: string | null
   created_at: string

@@ -108,7 +108,17 @@
     "search_placeholder": "Search by name or serial number...",
     "select_all": "Select all",
     "delete_selected": "Delete selected ({{count}})",
-    "delete_multiple_confirm": "Delete {{count}} cars?"
+    "delete_multiple_confirm": "Delete {{count}} cars?",
+    "delete_request": "Request Deletion",
+    "delete_request_sent": "Deletion request sent",
+    "delete_request_pending": "Pending admin approval",
+    "delete_request_rejected": "Deletion request rejected",
+    "delete_request_reason": "Reason (optional)",
+    "delete_request_notes": "Rejection notes",
+    "approve_delete": "Approve Deletion",
+    "reject_delete": "Reject Request",
+    "manage_delete_requests": "Manage Deletion Requests",
+    "no_delete_requests": "No deletion requests"
   },
   "users": {
     "title": "User Management",

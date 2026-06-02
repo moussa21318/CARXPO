@@ -5,6 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS change_log CASCADE;
 DROP TABLE IF EXISTS edit_requests CASCADE;
+DROP TABLE IF EXISTS delete_requests CASCADE;
 DROP TABLE IF EXISTS car_attachments CASCADE;
 DROP TABLE IF EXISTS customers CASCADE;
 DROP TABLE IF EXISTS request_clients CASCADE;
@@ -122,6 +123,19 @@ CREATE TABLE car_attachments (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Delete requests (employee requests admin approval to delete a car)
+CREATE TABLE delete_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
+  requested_by UUID REFERENCES users(id),
+  reason TEXT DEFAULT '',
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  reviewed_by UUID REFERENCES users(id),
+  review_notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  reviewed_at TIMESTAMPTZ
+);
+
 -- Storage bucket for attachments
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('car_attachments', 'car_attachments', true)
@@ -164,6 +178,7 @@ ALTER TABLE car_stage_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE request_clients DISABLE ROW LEVEL SECURITY;
 ALTER TABLE customers DISABLE ROW LEVEL SECURITY;
 ALTER TABLE edit_requests DISABLE ROW LEVEL SECURITY;
+ALTER TABLE delete_requests DISABLE ROW LEVEL SECURITY;
 ALTER TABLE change_log DISABLE ROW LEVEL SECURITY;
 ALTER TABLE car_attachments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;

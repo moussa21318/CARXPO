@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, deleteCars } from '../db/cloud'
-import { STAGE_ORDER, STAGE_LABELS, type Car, type CarStage } from '../types'
+import { getCars, deleteCars, getDeleteRequests, createDeleteRequest, reviewDeleteRequest } from '../db/cloud'
+import { STAGE_ORDER, STAGE_LABELS, type Car, type CarStage, type DeleteRequest } from '../types'
 import { formatPrice } from '../utils/format'
 
 export default function CarsList() {
@@ -15,6 +15,10 @@ export default function CarsList() {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteReqOpen, setDeleteReqOpen] = useState(false)
+  const [deleteReqReason, setDeleteReqReason] = useState('')
+  const [manageDeleteOpen, setManageDeleteOpen] = useState(false)
+  const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([])
   const stageFilter = (searchParams.get('stage') as CarStage) || undefined
   const searchFilter = searchParams.get('search') || undefined
 
@@ -44,6 +48,29 @@ export default function CarsList() {
     await deleteCars(Array.from(selected))
     setSelected(new Set())
     setDeleteOpen(false)
+    loadCars()
+  }
+
+  const handleRequestDelete = async () => {
+    if (!user) return
+    for (const carId of selected) {
+      await createDeleteRequest({ car_id: carId, requested_by: user.id, reason: deleteReqReason })
+    }
+    setSelected(new Set())
+    setDeleteReqOpen(false)
+    setDeleteReqReason('')
+    loadCars()
+  }
+
+  const loadDeleteRequests = async () => {
+    const data = await getDeleteRequests()
+    setDeleteRequests(data)
+  }
+
+  const handleReviewDelete = async (reqId: string, status: 'approved' | 'rejected') => {
+    if (!user) return
+    await reviewDeleteRequest(reqId, status, user.id)
+    loadDeleteRequests()
     loadCars()
   }
 
@@ -89,6 +116,18 @@ export default function CarsList() {
             🗑 {t('car.delete_selected', { count: selected.size })}
           </button>
         )}
+        {user?.role === 'employee' && selected.size > 0 && (
+          <button onClick={() => setDeleteReqOpen(true)}
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 text-sm whitespace-nowrap">
+            {t('car.delete_request')}
+          </button>
+        )}
+        {user?.role === 'admin' && (
+          <button onClick={() => { loadDeleteRequests(); setManageDeleteOpen(true) }}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm whitespace-nowrap">
+            {t('car.manage_delete_requests')}
+          </button>
+        )}
       </div>
       {loading ? (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('app.loading')}</div>
@@ -99,12 +138,10 @@ export default function CarsList() {
           <table className="w-full min-w-[700px]">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
-                {user?.role === 'admin' && (
-                  <th className="p-3 w-10">
-                    <input type="checkbox" checked={selected.size === cars.length && cars.length > 0}
-                      onChange={toggleAll} className="w-4 h-4" />
-                  </th>
-                )}
+                <th className="p-3 w-10">
+                  <input type="checkbox" checked={selected.size === cars.length && cars.length > 0}
+                    onChange={toggleAll} className="w-4 h-4" />
+                </th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.name')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.model_year')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.current_stage')}</th>
@@ -116,12 +153,10 @@ export default function CarsList() {
             <tbody>
               {cars.map(c => (
                 <tr key={c.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50">
-                  {user?.role === 'admin' && (
-                    <td className="p-3">
-                      <input type="checkbox" checked={selected.has(c.id)}
-                        onChange={() => toggleSelect(c.id)} className="w-4 h-4" />
-                    </td>
-                  )}
+                  <td className="p-3">
+                    <input type="checkbox" checked={selected.has(c.id)}
+                      onChange={() => toggleSelect(c.id)} className="w-4 h-4" />
+                  </td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <Link to={`/cars/${c.id}`} className="text-blue-600 dark:text-blue-400 hover:underline font-medium">{c.name}</Link>
@@ -159,10 +194,8 @@ export default function CarsList() {
           {cars.map(c => (
             <div key={c.id} className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex flex-col gap-2 hover:shadow-md transition-shadow ${selected.has(c.id) ? 'ring-2 ring-blue-500' : ''}`}>
               <div className="flex items-start gap-2">
-                {user?.role === 'admin' && (
-                  <input type="checkbox" checked={selected.has(c.id)}
-                    onChange={() => toggleSelect(c.id)} className="w-4 h-4 mt-1" />
-                )}
+                <input type="checkbox" checked={selected.has(c.id)}
+                  onChange={() => toggleSelect(c.id)} className="w-4 h-4 mt-1" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <Link to={`/cars/${c.id}`} className="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-lg leading-tight">{c.name}</Link>
@@ -188,6 +221,71 @@ export default function CarsList() {
               </Link>
             </div>
           ))}
+        </div>
+      )}
+
+      {deleteReqOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setDeleteReqOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('car.delete_request')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('car.delete_request')} ({selected.size})</p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.delete_request_reason')}</label>
+              <textarea value={deleteReqReason} onChange={e => setDeleteReqReason(e.target.value)}
+                rows={3} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setDeleteReqOpen(false)}
+                className="flex-1 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm transition-colors">
+                {t('app.cancel')}
+              </button>
+              <button onClick={handleRequestDelete}
+                className="flex-1 p-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm transition-colors">
+                {t('car.delete_request')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {manageDeleteOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setManageDeleteOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-lg p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('car.manage_delete_requests')}</h2>
+            {deleteRequests.filter(r => r.status === 'pending').length === 0 ? (
+              <p className="text-gray-400 dark:text-gray-500 text-sm">{t('car.no_delete_requests')}</p>
+            ) : (
+              <div className="space-y-3">
+                {deleteRequests.filter(r => r.status === 'pending').map(dr => {
+                  const car = cars.find(c => c.id === dr.car_id)
+                  return (
+                    <div key={dr.id} className="border dark:border-gray-700 rounded-lg p-4 space-y-2">
+                      <p className="text-sm font-medium">{car?.name || dr.car_id}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('car.delete_request_reason')}: {dr.reason || '-'}</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleReviewDelete(dr.id, 'approved')}
+                          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 text-xs">
+                          {t('car.approve_delete')}
+                        </button>
+                        <button onClick={() => handleReviewDelete(dr.id, 'rejected')}
+                          className="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 text-xs">
+                          {t('car.reject_delete')}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <button onClick={() => setManageDeleteOpen(false)}
+              className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm transition-colors">
+              {t('app.cancel')}
+            </button>
+          </div>
         </div>
       )}
 

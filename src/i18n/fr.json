@@ -108,7 +108,17 @@
     "search_placeholder": "Rechercher par nom ou NVI...",
     "select_all": "Tout sélectionner",
     "delete_selected": "Supprimer la sélection ({{count}})",
-    "delete_multiple_confirm": "Supprimer {{count}} voitures ?"
+    "delete_multiple_confirm": "Supprimer {{count}} voitures ?",
+    "delete_request": "Demander la suppression",
+    "delete_request_sent": "Demande de suppression envoyée",
+    "delete_request_pending": "En attente d'approbation",
+    "delete_request_rejected": "Demande de suppression rejetée",
+    "delete_request_reason": "Motif (optionnel)",
+    "delete_request_notes": "Notes de rejet",
+    "approve_delete": "Approuver la suppression",
+    "reject_delete": "Rejeter la demande",
+    "manage_delete_requests": "Gérer les demandes",
+    "no_delete_requests": "Aucune demande de suppression"
   },
   "users": {
     "title": "Gestion des utilisateurs",

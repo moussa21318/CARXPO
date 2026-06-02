@@ -7,9 +7,10 @@ import {
   getStageLogs, moveToStage,
   getRequestClient, getCustomer, upsertCustomer,
   getAttachments, addAttachment, deleteAttachment,
+  getDeleteRequests, createDeleteRequest, reviewDeleteRequest,
 } from '../db/cloud'
 import { uploadFile } from '../utils/upload'
-import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, type Car, type CarFees, type CarStage } from '../types'
+import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, type Car, type CarFees, type CarStage, type DeleteRequest } from '../types'
 import { formatPrice } from '../utils/format'
 
 export default function CarDetails() {
@@ -32,14 +33,17 @@ export default function CarDetails() {
   const [loading, setLoading] = useState(true)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteRequestOpen, setDeleteRequestOpen] = useState(false)
+  const [deleteRequestReason, setDeleteRequestReason] = useState('')
+  const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([])
   const [modalLp, setModalLp] = useState('')
   const [modalMy, setModalMy] = useState(0)
   const [modalPrice, setModalPrice] = useState(0)
 
   const loadData = async () => {
     if (!id) return
-    const [c, f, sl, rc, cust, att] = await Promise.all([
-      getCar(id), getCarFees(id), getStageLogs(id), getRequestClient(id), getCustomer(id), getAttachments(id),
+    const [c, f, sl, rc, cust, att, dr] = await Promise.all([
+      getCar(id), getCarFees(id), getStageLogs(id), getRequestClient(id), getCustomer(id), getAttachments(id), getDeleteRequests(id),
     ])
     setCar(c)
     setFees(f)
@@ -47,6 +51,7 @@ export default function CarDetails() {
     setRequestClient(rc)
     setCustomerData(cust || {})
     setAttachments(att)
+    setDeleteRequests(dr)
     const lastWithEvidence = sl?.find(log => log.evidence_url)
     if (lastWithEvidence) setEvidencePublicUrl(lastWithEvidence.evidence_url || '')
     setLoading(false)
@@ -142,6 +147,20 @@ export default function CarDetails() {
     loadData()
   }
 
+  const handleRequestDelete = async () => {
+    if (!id || !user) return
+    await createDeleteRequest({ car_id: id, requested_by: user.id, reason: deleteRequestReason })
+    setDeleteRequestOpen(false)
+    setDeleteRequestReason('')
+    loadData()
+  }
+
+  const handleReviewDelete = async (reqId: string, status: 'approved' | 'rejected', reviewNotes?: string) => {
+    if (!user) return
+    await reviewDeleteRequest(reqId, status, user.id, reviewNotes)
+    loadData()
+  }
+
   if (loading) return <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('app.loading')}</div>
   if (!car) return <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('app.no_data')}</div>
 
@@ -167,6 +186,27 @@ export default function CarDetails() {
             className="bg-red-50 dark:bg-red-900/300 text-white px-4 py-2 rounded-lg hover:bg-red-600 text-sm">
             🗑 {t('car.delete_car')}
           </button>
+        )}
+        {user?.role === 'employee' && !deleteRequests.find(r => r.status === 'pending') && !deleteRequests.find(r => r.status === 'approved') && (
+          <button onClick={() => setDeleteRequestOpen(true)}
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 text-sm">
+            {t('car.delete_request')}
+          </button>
+        )}
+        {user?.role === 'employee' && deleteRequests.find(r => r.status === 'pending') && (
+          <span className="text-yellow-600 dark:text-yellow-400 text-sm flex items-center gap-1">
+            ⏳ {t('car.delete_request_pending')}
+          </span>
+        )}
+        {user?.role === 'employee' && deleteRequests.find(r => r.status === 'approved') && (
+          <span className="text-green-600 dark:text-green-400 text-sm flex items-center gap-1">
+            ✓ {t('car.delete_request_sent')}
+          </span>
+        )}
+        {user?.role === 'employee' && deleteRequests.find(r => r.status === 'rejected') && (
+          <span className="text-red-600 dark:text-red-400 text-sm flex items-center gap-1">
+            ✗ {t('car.delete_request_rejected')}
+          </span>
         )}
       </div>
 
@@ -395,6 +435,27 @@ export default function CarDetails() {
         )}
       </div>
 
+      {user?.role === 'admin' && deleteRequests.filter(r => r.status === 'pending').length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <h2 className="font-semibold mb-4">{t('car.manage_delete_requests')}</h2>
+          {deleteRequests.filter(r => r.status === 'pending').map(dr => (
+            <div key={dr.id} className="border dark:border-gray-700 rounded-lg p-4 space-y-3">
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t('car.delete_request_reason')}: {dr.reason || '-'}</p>
+              <div className="flex gap-2">
+                <button onClick={() => handleReviewDelete(dr.id, 'approved')}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+                  {t('car.approve_delete')}
+                </button>
+                <button onClick={() => handleReviewDelete(dr.id, 'rejected')}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm">
+                  {t('car.reject_delete')}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {confirmOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
              onClick={() => setConfirmOpen(false)}>
@@ -430,6 +491,31 @@ export default function CarDetails() {
               <button onClick={handleConfirmSave}
                 className="flex-1 p-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm transition-colors">
                 {t('app.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteRequestOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setDeleteRequestOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('car.delete_request')}</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.delete_request_reason')}</label>
+              <textarea value={deleteRequestReason} onChange={e => setDeleteRequestReason(e.target.value)}
+                rows={3} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setDeleteRequestOpen(false)}
+                className="flex-1 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 dark:bg-gray-600 text-sm transition-colors">
+                {t('app.cancel')}
+              </button>
+              <button onClick={handleRequestDelete}
+                className="flex-1 p-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm transition-colors">
+                {t('car.delete_request')}
               </button>
             </div>
           </div>
