@@ -66,17 +66,82 @@ CREATE TABLE car_stage_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Disable RLS on all tables (app uses custom auth, not supabase auth)
-ALTER TABLE users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE cars DISABLE ROW LEVEL SECURITY;
-ALTER TABLE car_fees DISABLE ROW LEVEL SECURITY;
-ALTER TABLE car_stage_logs DISABLE ROW LEVEL SECURITY;
-ALTER TABLE request_clients DISABLE ROW LEVEL SECURITY;
-ALTER TABLE customers DISABLE ROW LEVEL SECURITY;
-ALTER TABLE edit_requests DISABLE ROW LEVEL SECURITY;
-ALTER TABLE change_log DISABLE ROW LEVEL SECURITY;
-ALTER TABLE car_attachments DISABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
+-- Request clients (initial order person)
+CREATE TABLE request_clients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  car_id UUID UNIQUE REFERENCES cars(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  phone TEXT DEFAULT ''
+);
+
+-- Final customers (shipping prep)
+CREATE TABLE customers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  car_id UUID UNIQUE REFERENCES cars(id) ON DELETE CASCADE,
+  full_name_latin TEXT NOT NULL,
+  national_id TEXT NOT NULL,
+  address_latin TEXT NOT NULL,
+  postal_code TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT DEFAULT ''
+);
+
+-- Edit requests
+CREATE TABLE edit_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
+  requested_by UUID REFERENCES users(id),
+  old_data JSONB,
+  new_data JSONB,
+  reason TEXT DEFAULT '',
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  reviewed_by UUID REFERENCES users(id),
+  review_notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  reviewed_at TIMESTAMPTZ
+);
+
+-- Change log
+CREATE TABLE change_log (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  table_name TEXT NOT NULL,
+  record_id TEXT NOT NULL,
+  operation TEXT NOT NULL CHECK (operation IN ('insert','update','delete')),
+  old_data JSONB,
+  new_data JSONB,
+  user_id UUID REFERENCES users(id),
+  timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Car attachments
+CREATE TABLE car_attachments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Storage bucket for attachments
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('car_attachments', 'car_attachments', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow public (anon) users to upload files (app uses custom auth, not supabase auth)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'upload_auth' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "upload_auth" ON storage.objects
+      FOR INSERT TO public WITH CHECK (bucket_id = 'car_attachments');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'select_public' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "select_public" ON storage.objects
+      FOR SELECT TO public USING (bucket_id = 'car_attachments');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'delete_auth' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "delete_auth" ON storage.objects
+      FOR DELETE TO public USING (bucket_id = 'car_attachments');
+  END IF;
+END $$;
 
 -- Notifications
 CREATE TABLE notifications (
@@ -90,3 +155,15 @@ CREATE TABLE notifications (
   created_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Disable RLS on all tables (app uses custom auth, not supabase auth)
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE cars DISABLE ROW LEVEL SECURITY;
+ALTER TABLE car_fees DISABLE ROW LEVEL SECURITY;
+ALTER TABLE car_stage_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE request_clients DISABLE ROW LEVEL SECURITY;
+ALTER TABLE customers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE edit_requests DISABLE ROW LEVEL SECURITY;
+ALTER TABLE change_log DISABLE ROW LEVEL SECURITY;
+ALTER TABLE car_attachments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
