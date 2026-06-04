@@ -118,7 +118,9 @@
     "approve_delete": "الموافقة على الحذف",
     "reject_delete": "رفض الطلب",
     "manage_delete_requests": "إدارة طلبات الحذف",
-    "no_delete_requests": "لا توجد طلبات حذف"
+    "no_delete_requests": "لا توجد طلبات حذف",
+    "prev_page": "السابق",
+    "next_page": "التالي"
   },
   "users": {
     "title": "إدارة المستخدمين",

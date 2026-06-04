@@ -118,7 +118,9 @@
     "approve_delete": "Approuver la suppression",
     "reject_delete": "Rejeter la demande",
     "manage_delete_requests": "Gérer les demandes",
-    "no_delete_requests": "Aucune demande de suppression"
+    "no_delete_requests": "Aucune demande de suppression",
+    "prev_page": "Précédent",
+    "next_page": "Suivant"
   },
   "users": {
     "title": "Gestion des utilisateurs",

@@ -2,11 +2,12 @@
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../db/cloud'
+import type { Notification } from '../types'
 
 export default function NotificationsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const [notifications, setNotifications] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = async () => {

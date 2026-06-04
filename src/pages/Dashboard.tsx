@@ -2,18 +2,18 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getCars, getChangeLogs } from '../db/cloud'
-import { STAGE_ORDER, STAGE_LABELS, type Car } from '../types'
+import { STAGE_ORDER, STAGE_LABELS, type Car, type ChangeLog } from '../types'
 
 export default function Dashboard() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [cars, setCars] = useState<Car[]>([])
-  const [logs, setLogs] = useState<any[]>([])
+  const [logs, setLogs] = useState<ChangeLog[]>([])
   const [loading, setLoading] = useState(true)
   const [searchVal, setSearchVal] = useState('')
 
   useEffect(() => {
-    Promise.all([getCars(), getChangeLogs(10)]).then(([c, l]) => {
+    Promise.all([getCars(), getChangeLogs(50)]).then(([c, l]) => {
       setCars(c)
       setLogs(l)
       setLoading(false)

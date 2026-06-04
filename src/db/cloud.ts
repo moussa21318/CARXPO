@@ -80,6 +80,21 @@ export async function getCars(filter?: { stage?: CarStage; search?: string }): P
   } catch { return [] }
 }
 
+export async function getCarsPaginated(filter: { stage?: CarStage; search?: string; page: number; pageSize: number }): Promise<{ cars: Car[]; total: number }> {
+  try {
+    const from = (filter.page - 1) * filter.pageSize
+    const to = from + filter.pageSize - 1
+    let q = getClient().from('cars').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to)
+    if (filter.stage) q = q.eq('current_stage', filter.stage)
+    if (filter.search) {
+      q = q.or(`name.ilike.%${filter.search}%,serial_number.ilike.%${filter.search}%,license_plate.ilike.%${filter.search}%,seller_phone.ilike.%${filter.search}%`)
+    }
+    const { data, error, count } = await q
+    if (error) return { cars: [], total: 0 }
+    return { cars: (data as Car[]) || [], total: count || 0 }
+  } catch { return { cars: [], total: 0 } }
+}
+
 export async function getCar(id: string): Promise<Car | null> {
   try {
     const { data, error } = await getClient().from('cars').select('*').eq('id', id).single()
@@ -271,15 +286,18 @@ export async function createDeleteRequest(payload: Partial<DeleteRequest>): Prom
   return data as DeleteRequest
 }
 
-export async function reviewDeleteRequest(id: string, status: 'approved' | 'rejected', reviewedBy: string, reviewNotes?: string): Promise<void> {
+export async function reviewDeleteRequest(id: string, status: 'approved' | 'rejected', reviewedBy: string, reviewNotes?: string): Promise<string | null> {
+  const req = await getDeleteRequestsForReview(id)
+  if (!req) return null
   const { error: updateErr } = await getClient().from('delete_requests').update({
     status, reviewed_by: reviewedBy, review_notes: reviewNotes || null, reviewed_at: new Date().toISOString(),
   }).eq('id', id)
   if (updateErr) handleError('reviewDeleteRequest failed', updateErr)
   if (status === 'approved') {
-    const req = await getDeleteRequestsForReview(id)
-    if (req) await deleteCar(req.car_id)
+    await deleteCar(req.car_id)
+    return req.car_id
   }
+  return null
 }
 
 async function getDeleteRequestsForReview(id: string): Promise<DeleteRequest | null> {
@@ -296,6 +314,22 @@ export async function getChangeLogs(limit = 50): Promise<ChangeLog[]> {
     const { data, error } = await getClient().from('change_log').select('*').order('timestamp', { ascending: false }).limit(limit)
     if (error) return []
     return (data as ChangeLog[]) || []
+  } catch { return [] }
+}
+
+export async function getChangeLogsWithUsers(limit = 50): Promise<(ChangeLog & { user_name: string })[]> {
+  try {
+    const { data, error } = await getClient()
+      .from('change_log')
+      .select('*, user:users!change_log_user_id_fkey(username, full_name)')
+      .order('timestamp', { ascending: false })
+      .limit(limit)
+    if (error) return []
+    return ((data as any[]) || []).map(l => {
+      const userName = l.user ? (l.user.full_name || l.user.username) : l.user_id?.slice(0, 8)
+      const { user, ...rest } = l
+      return { ...rest, user_name: userName } as ChangeLog & { user_name: string }
+    })
   } catch { return [] }
 }
 

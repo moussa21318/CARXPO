@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
@@ -10,7 +10,7 @@ import {
   getDeleteRequests, createDeleteRequest, reviewDeleteRequest,
 } from '../db/cloud'
 import { uploadFile } from '../utils/upload'
-import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, type Car, type CarFees, type CarStage, type DeleteRequest } from '../types'
+import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, type Car, type CarFees, type CarStageLog, type RequestClient, type Customer, type CarAttachment, type CarStage, type DeleteRequest } from '../types'
 import { formatPrice } from '../utils/format'
 
 export default function CarDetails() {
@@ -21,10 +21,10 @@ export default function CarDetails() {
 
   const [car, setCar] = useState<Car | null>(null)
   const [fees, setFees] = useState<CarFees | null>(null)
-  const [stageLogs, setStageLogs] = useState<any[]>([])
-  const [requestClient, setRequestClient] = useState<any>(null)
-  const [customerData, setCustomerData] = useState<any>(null)
-  const [attachments, setAttachments] = useState<any[]>([])
+  const [stageLogs, setStageLogs] = useState<CarStageLog[]>([])
+  const [requestClient, setRequestClient] = useState<RequestClient | null>(null)
+  const [customerData, setCustomerData] = useState<Partial<Customer>>({})
+  const [attachments, setAttachments] = useState<(CarAttachment & { publicUrl: string })[]>([])
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
   const [evidencePublicUrl, setEvidencePublicUrl] = useState('')
   const [newAttachFile, setNewAttachFile] = useState<File | null>(null)
@@ -40,7 +40,7 @@ export default function CarDetails() {
   const [modalMy, setModalMy] = useState(0)
   const [modalPrice, setModalPrice] = useState(0)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!id) return
     const [c, f, sl, rc, cust, att, dr] = await Promise.all([
       getCar(id), getCarFees(id), getStageLogs(id), getRequestClient(id), getCustomer(id), getAttachments(id), getDeleteRequests(id),
@@ -52,10 +52,10 @@ export default function CarDetails() {
     setCustomerData(cust || {})
     setAttachments(att)
     setDeleteRequests(dr)
-    const lastWithEvidence = sl?.find(log => log.evidence_url)
+    const lastWithEvidence = sl?.find((log: CarStageLog) => log.evidence_url)
     if (lastWithEvidence) setEvidencePublicUrl(lastWithEvidence.evidence_url || '')
     setLoading(false)
-  }
+  }, [id])
 
   useEffect(() => { loadData() }, [id])
 
@@ -106,7 +106,7 @@ export default function CarDetails() {
 
   const handleSaveCustomer = async () => {
     if (!id || !user) return
-    await upsertCustomer({ car_id: id, id: customerData?.id, ...customerData })
+    await upsertCustomer({ car_id: id, id: (customerData as any).id, ...customerData })
     loadData()
   }
 
@@ -142,7 +142,7 @@ export default function CarDetails() {
     }
   }
 
-  const handleDeleteAttachment = async (att: any) => {
+  const handleDeleteAttachment = async (att: CarAttachment & { publicUrl: string }) => {
     await deleteAttachment(att.id, att.storage_path)
     loadData()
   }
@@ -155,10 +155,14 @@ export default function CarDetails() {
     loadData()
   }
 
-  const handleReviewDelete = async (reqId: string, status: 'approved' | 'rejected', reviewNotes?: string) => {
+  const handleReviewDelete = async (reqId: string, status: 'approved' | 'rejected') => {
     if (!user) return
-    await reviewDeleteRequest(reqId, status, user.id, reviewNotes)
-    loadData()
+    const deletedCarId = await reviewDeleteRequest(reqId, status, user.id)
+    if (status === 'approved' && deletedCarId) {
+      navigate('/cars')
+    } else {
+      loadData()
+    }
   }
 
   if (loading) return <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('app.loading')}</div>
@@ -362,7 +366,7 @@ export default function CarDetails() {
           <p className="text-gray-400 dark:text-gray-500 text-sm mb-3">{t('app.no_data')}</p>
         ) : (
           <div className="space-y-2 mb-4">
-            {attachments.map((att: any) => (
+             {attachments.map(att => (
               <div key={att.id} className="flex items-center gap-3 text-sm border-b dark:border-gray-700 pb-2">
                 <a href={att.publicUrl} target="_blank" rel="noopener noreferrer"
                   className="text-blue-600 dark:text-blue-400 hover:underline truncate flex-1">{att.name}</a>
@@ -401,7 +405,7 @@ export default function CarDetails() {
               <div key={key}>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t(`car.${key}`)}</label>
                 <input value={customerData?.[key] || ''}
-                  onChange={e => setCustomerData((prev: any) => ({ ...prev, [key]: e.target.value }))}
+                  onChange={e => setCustomerData((prev: Partial<Customer>) => ({ ...prev, [key]: e.target.value }))}
                   className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             ))}
@@ -420,7 +424,7 @@ export default function CarDetails() {
           <p className="text-gray-400 dark:text-gray-500 text-sm">{t('app.no_data')}</p>
         ) : (
           <div className="space-y-2">
-            {stageLogs.map(log => (
+            {stageLogs.map((log: CarStageLog) => (
               <div key={log.id} className="flex items-center gap-3 text-sm border-b dark:border-gray-700 pb-2 last:border-0 flex-wrap">
                 <span className="text-gray-500 dark:text-gray-400 text-xs">{new Date(log.created_at).toLocaleString()}</span>
                 <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded text-xs">{t(STAGE_LABELS[log.stage as CarStage])}</span>

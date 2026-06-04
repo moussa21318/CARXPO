@@ -241,7 +241,7 @@ export default function CarForm() {
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
             {saving ? t('app.loading') : t('app.save')}
           </button>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => navigate(isEdit && id ? `/cars/${id}` : '/cars')}
             className="bg-gray-200 dark:bg-gray-600 px-6 py-3 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
             {t('app.cancel')}
           </button>

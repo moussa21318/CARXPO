@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getChangeLogs } from '../db/cloud'
+import { getChangeLogsWithUsers } from '../db/cloud'
 
 export default function ActivityLogPage() {
   const { t } = useTranslation()
@@ -8,7 +8,7 @@ export default function ActivityLogPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getChangeLogs(100).then(data => { setLogs(data); setLoading(false) })
+    getChangeLogsWithUsers(100).then(data => { setLogs(data); setLoading(false) })
   }, [])
 
   return (
@@ -40,7 +40,7 @@ export default function ActivityLogPage() {
                       'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                     }`}>{t(`activity.${l.operation}`)}</span>
                   </td>
-                  <td className="p-3 text-gray-600 dark:text-gray-300">{l.user_id?.slice(0, 8)}</td>
+                  <td className="p-3 text-gray-600 dark:text-gray-300">{(l as any).user_name || l.user_id?.slice(0, 8)}</td>
                   <td className="p-3 text-gray-500 dark:text-gray-400 text-sm">{new Date(l.timestamp).toLocaleString()}</td>
                 </tr>
               ))}

@@ -67,74 +67,10 @@ CREATE TABLE car_stage_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Request clients (initial order person)
-CREATE TABLE request_clients (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  car_id UUID UNIQUE REFERENCES cars(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  phone TEXT DEFAULT ''
-);
-
--- Final customers (shipping prep)
-CREATE TABLE customers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  car_id UUID UNIQUE REFERENCES cars(id) ON DELETE CASCADE,
-  full_name_latin TEXT NOT NULL,
-  national_id TEXT NOT NULL,
-  address_latin TEXT NOT NULL,
-  postal_code TEXT NOT NULL,
-  phone TEXT NOT NULL,
-  email TEXT DEFAULT ''
-);
-
--- Edit requests
-CREATE TABLE edit_requests (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
-  requested_by UUID REFERENCES users(id),
-  old_data JSONB,
-  new_data JSONB,
-  reason TEXT DEFAULT '',
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
-  reviewed_by UUID REFERENCES users(id),
-  review_notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  reviewed_at TIMESTAMPTZ
-);
-
--- Change log
-CREATE TABLE change_log (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  table_name TEXT NOT NULL,
-  record_id TEXT NOT NULL,
-  operation TEXT NOT NULL CHECK (operation IN ('insert','update','delete')),
-  old_data JSONB,
-  new_data JSONB,
-  user_id UUID REFERENCES users(id),
-  timestamp TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Car attachments
-CREATE TABLE car_attachments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  storage_path TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Delete requests (employee requests admin approval to delete a car)
-CREATE TABLE delete_requests (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
-  requested_by UUID REFERENCES users(id),
-  reason TEXT DEFAULT '',
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
-  reviewed_by UUID REFERENCES users(id),
-  review_notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  reviewed_at TIMESTAMPTZ
-);
+CREATE INDEX IF NOT EXISTS idx_cars_created_at ON cars(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_car_stage_logs_car_id ON car_stage_logs(car_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
 
 -- Storage bucket for attachments
 INSERT INTO storage.buckets (id, name, public)

@@ -118,7 +118,9 @@
     "approve_delete": "Approve Deletion",
     "reject_delete": "Reject Request",
     "manage_delete_requests": "Manage Deletion Requests",
-    "no_delete_requests": "No deletion requests"
+    "no_delete_requests": "No deletion requests",
+    "prev_page": "Previous",
+    "next_page": "Next"
   },
   "users": {
     "title": "User Management",

@@ -2,15 +2,19 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, deleteCars, getDeleteRequests, createDeleteRequest, reviewDeleteRequest } from '../db/cloud'
+import { getCarsPaginated, deleteCars, getDeleteRequests, createDeleteRequest, reviewDeleteRequest } from '../db/cloud'
 import { STAGE_ORDER, STAGE_LABELS, type Car, type CarStage, type DeleteRequest } from '../types'
 import { formatPrice } from '../utils/format'
+
+const PAGE_SIZE = 20
 
 export default function CarsList() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [cars, setCars] = useState<Car[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards')
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -22,14 +26,20 @@ export default function CarsList() {
   const stageFilter = (searchParams.get('stage') as CarStage) || undefined
   const searchFilter = searchParams.get('search') || undefined
 
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+
   const loadCars = async () => {
     setLoading(true)
-    const data = await getCars({ stage: stageFilter, search: searchFilter })
+    const { cars: data, total: count } = await getCarsPaginated({ stage: stageFilter, search: searchFilter, page, pageSize: PAGE_SIZE })
     setCars(data)
+    setTotal(count)
+    setSelected(new Set())
     setLoading(false)
   }
 
-  useEffect(() => { loadCars() }, [stageFilter, searchFilter])
+  useEffect(() => { loadCars() }, [stageFilter, searchFilter, page])
+
+  useEffect(() => { setPage(1) }, [stageFilter, searchFilter])
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -221,6 +231,20 @@ export default function CarsList() {
               </Link>
             </div>
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            className="px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed">
+            {t('car.prev_page')}
+          </button>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{page} / {totalPages}</span>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            className="px-3 py-1.5 rounded-lg text-sm border dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed">
+            {t('car.next_page')}
+          </button>
         </div>
       )}
 
