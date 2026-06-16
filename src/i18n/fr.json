@@ -12,7 +12,9 @@
     "no_data": "Aucune donnée",
     "details": "Détails",
     "yes": "Oui",
-    "no": "Non"
+    "no": "Non",
+    "close": "Fermer",
+    "select": "Sélectionner"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -23,7 +25,8 @@
     "export": "Exporter Excel",
     "logout": "Déconnexion",
     "view_table": "Tableau",
-    "view_cards": "Cartes"
+    "view_cards": "Cartes",
+    "payments": "Relevé comptes"
   },
   "auth": {
     "login": "Connexion",
@@ -195,5 +198,25 @@
   "theme": {
     "dark": "Sombre",
     "light": "Clair"
+  },
+  "payments": {
+    "title": "Relevé de compte client",
+    "add": "Ajouter un paiement",
+    "quick_add": "Paiement rapide",
+    "amount": "Montant",
+    "date": "Date de paiement",
+    "method": "Moyen de paiement",
+    "receipt": "Reçu",
+    "notes": "Notes",
+    "total": "Total encaissé",
+    "total_paid": "Total payé",
+    "debt": "Restant dû",
+    "payment_history": "Historique des paiements"
+  },
+  "payment_method": {
+    "cash": "Espèces",
+    "bank_transfer": "Virement bancaire",
+    "check": "Chèque",
+    "credit_card": "Carte de crédit"
   }
 }

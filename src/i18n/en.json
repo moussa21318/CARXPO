@@ -12,7 +12,9 @@
     "no_data": "No data",
     "details": "Details",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "close": "Close",
+    "select": "Select"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -23,7 +25,8 @@
     "export": "Export Excel",
     "logout": "Logout",
     "view_table": "Table",
-    "view_cards": "Cards"
+    "view_cards": "Cards",
+    "payments": "Payments"
   },
   "auth": {
     "login": "Login",
@@ -195,5 +198,25 @@
   "theme": {
     "dark": "Dark",
     "light": "Light"
+  },
+  "payments": {
+    "title": "Customer Account Statement",
+    "add": "Add Payment",
+    "quick_add": "Quick Payment",
+    "amount": "Amount",
+    "date": "Payment Date",
+    "method": "Payment Method",
+    "receipt": "Receipt",
+    "notes": "Notes",
+    "total": "Total Collected",
+    "total_paid": "Total Paid",
+    "debt": "Remaining",
+    "payment_history": "Payment History"
+  },
+  "payment_method": {
+    "cash": "Cash",
+    "bank_transfer": "Bank Transfer",
+    "check": "Check",
+    "credit_card": "Credit Card"
   }
 }

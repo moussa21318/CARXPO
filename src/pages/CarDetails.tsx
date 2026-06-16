@@ -8,9 +8,11 @@ import {
   getRequestClient, getCustomer, upsertCustomer,
   getAttachments, addAttachment, deleteAttachment,
   getDeleteRequests, createDeleteRequest, reviewDeleteRequest,
+  getCustomerPayments, createCustomerPayment, deleteCustomerPayment,
+  getClient,
 } from '../db/cloud'
 import { uploadFile } from '../utils/upload'
-import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, type Car, type CarFees, type CarStageLog, type RequestClient, type Customer, type CarAttachment, type CarStage, type DeleteRequest } from '../types'
+import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, PAYMENT_METHOD_LABELS, type Car, type CarFees, type CarStageLog, type RequestClient, type Customer, type CarAttachment, type CarStage, type DeleteRequest, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 
 export default function CarDetails() {
@@ -36,14 +38,21 @@ export default function CarDetails() {
   const [deleteRequestOpen, setDeleteRequestOpen] = useState(false)
   const [deleteRequestReason, setDeleteRequestReason] = useState('')
   const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([])
+  const [payments, setPayments] = useState<CustomerPayment[]>([])
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState(0)
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
+  const [paymentReceipt, setPaymentReceipt] = useState<File | null>(null)
+  const [paymentNotes, setPaymentNotes] = useState('')
   const [modalLp, setModalLp] = useState('')
   const [modalMy, setModalMy] = useState(0)
   const [modalPrice, setModalPrice] = useState(0)
 
   const loadData = useCallback(async () => {
     if (!id) return
-    const [c, f, sl, rc, cust, att, dr] = await Promise.all([
-      getCar(id), getCarFees(id), getStageLogs(id), getRequestClient(id), getCustomer(id), getAttachments(id), getDeleteRequests(id),
+    const [c, f, sl, rc, cust, att, dr, p] = await Promise.all([
+      getCar(id), getCarFees(id), getStageLogs(id), getRequestClient(id), getCustomer(id), getAttachments(id), getDeleteRequests(id), getCustomerPayments(id),
     ])
     setCar(c)
     setFees(f)
@@ -52,6 +61,7 @@ export default function CarDetails() {
     setCustomerData(cust || {})
     setAttachments(att)
     setDeleteRequests(dr)
+    setPayments(p)
     const lastWithEvidence = sl?.find((log: CarStageLog) => log.evidence_url)
     if (lastWithEvidence) setEvidencePublicUrl(lastWithEvidence.evidence_url || '')
     setLoading(false)
@@ -164,6 +174,38 @@ export default function CarDetails() {
       loadData()
     }
   }
+
+  const handleAddPayment = async () => {
+    if (!id || !user || paymentAmount <= 0) return
+    let receiptUrl: string | null = null
+    if (paymentReceipt) {
+      const result = await uploadFile('car_attachments', `receipts/${id}`, paymentReceipt)
+      receiptUrl = result.storagePath
+    }
+    await createCustomerPayment({
+      car_id: id,
+      amount: paymentAmount,
+      payment_date: paymentDate,
+      payment_method: paymentMethod,
+      receipt_url: receiptUrl,
+      notes: paymentNotes,
+      created_by: user.id,
+    })
+    setPaymentOpen(false)
+    setPaymentAmount(0)
+    setPaymentDate(new Date().toISOString().slice(0, 10))
+    setPaymentMethod('cash')
+    setPaymentReceipt(null)
+    setPaymentNotes('')
+    loadData()
+  }
+
+  const handleDeletePayment = async (payment: CustomerPayment) => {
+    await deleteCustomerPayment(payment.id, payment.receipt_url || undefined)
+    loadData()
+  }
+
+  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
 
   if (loading) return <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('app.loading')}</div>
   if (!car) return <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('app.no_data')}</div>
@@ -397,6 +439,44 @@ export default function CarDetails() {
         {uploadError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{uploadError}</p>}
       </div>
 
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold">{t('payments.title')}</h2>
+          {canEdit && (
+            <button onClick={() => setPaymentOpen(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+              + {t('payments.add')}
+            </button>
+          )}
+        </div>
+        {payments.length === 0 ? (
+          <p className="text-gray-400 dark:text-gray-500 text-sm">{t('app.no_data')}</p>
+        ) : (
+          <div className="space-y-2">
+            {payments.map(p => (
+              <div key={p.id} className="flex items-center gap-3 text-sm border-b dark:border-gray-700 pb-2 flex-wrap">
+                <span className="text-gray-500 dark:text-gray-400 text-xs">{p.payment_date}</span>
+                <span className="font-semibold text-green-700 dark:text-green-300">{formatPrice(p.amount)}</span>
+                <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{t(PAYMENT_METHOD_LABELS[p.payment_method])}</span>
+                {p.receipt_url && (
+                  <a href={getClient().storage.from('car_attachments').getPublicUrl(p.receipt_url).data.publicUrl}
+                    target="_blank" rel="noopener noreferrer"
+                    className="text-blue-600 dark:text-blue-400 hover:underline text-xs">{t('payments.receipt')}</a>
+                )}
+                {p.notes && <span className="text-gray-500 dark:text-gray-400 text-xs">{p.notes}</span>}
+                {canEdit && (
+                  <button onClick={() => handleDeletePayment(p)}
+                    className="text-red-500 hover:text-red-700 text-xs px-1 ml-auto">✕</button>
+                )}
+              </div>
+            ))}
+            <div className="pt-2 text-sm font-medium border-t dark:border-gray-700">
+              {t('payments.total')}: {formatPrice(totalPaid)}
+            </div>
+          </div>
+        )}
+      </div>
+
       {(car.current_stage === 'shipping_prep' || car.current_stage === 'shipping') && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <h2 className="font-semibold mb-4">{t('car.customer_info')}</h2>
@@ -544,6 +624,55 @@ export default function CarDetails() {
               <button onClick={handleDeleteCar}
                 className="flex-1 p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm transition-colors">
                 {t('car.delete_car')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {paymentOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setPaymentOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('payments.add')}</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')}</label>
+              <input type="number" value={paymentAmount || ''} onChange={e => setPaymentAmount(Number(e.target.value))} min={0}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')}</label>
+              <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.method')}</label>
+              <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                {(['cash', 'bank_transfer', 'check', 'credit_card'] as PaymentMethod[]).map(m => (
+                  <option key={m} value={m}>{t(PAYMENT_METHOD_LABELS[m])}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.receipt')}</label>
+              <input type="file" onChange={e => setPaymentReceipt(e.target.files?.[0] || null)}
+                accept="image/*,.pdf" className="w-full text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.notes')}</label>
+              <textarea value={paymentNotes} onChange={e => setPaymentNotes(e.target.value)}
+                rows={2} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setPaymentOpen(false)}
+                className="flex-1 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 dark:bg-gray-600 text-sm transition-colors">
+                {t('app.cancel')}
+              </button>
+              <button onClick={handleAddPayment} disabled={paymentAmount <= 0}
+                className="flex-1 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors disabled:opacity-50">
+                {t('app.save')}
               </button>
             </div>
           </div>

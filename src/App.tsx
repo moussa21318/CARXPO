@@ -11,6 +11,7 @@ import NotificationsPage from './pages/NotificationsPage'
 import ActivityLogPage from './pages/ActivityLogPage'
 import ExportPage from './pages/ExportPage'
 import ImportPage from './pages/ImportPage'
+import PaymentsPage from './pages/PaymentsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -36,6 +37,7 @@ function AppRoutes() {
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/export" element={<ExportPage />} />
         <Route path="/import" element={<ImportPage />} />
+        <Route path="/payments" element={<PaymentsPage />} />
       </Route>
     </Routes>
   )

@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type {
   User, Car, CarFees, CarStageLog, RequestClient, Customer,
-  EditRequest, ChangeLog, Notification, CarStage, CarAttachment, DeleteRequest,
+  EditRequest, ChangeLog, Notification, CarStage, CarAttachment, DeleteRequest, CustomerPayment,
 } from '../types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -409,4 +409,41 @@ export async function deleteAttachment(id: string, storagePath?: string): Promis
   }
   const { error } = await getClient().from('car_attachments').delete().eq('id', id)
   if (error) handleError('deleteAttachment failed', error)
+}
+
+// --- Customer Payments ---
+export async function getCustomerPayments(carId: string): Promise<CustomerPayment[]> {
+  try {
+    const { data, error } = await getClient().from('customer_payments').select('*').eq('car_id', carId).order('payment_date', { ascending: false })
+    if (error) return []
+    return (data as CustomerPayment[]) || []
+  } catch { return [] }
+}
+
+export async function getAllCustomerPayments(): Promise<(CustomerPayment & { car_name?: string; customer_name?: string })[]> {
+  try {
+    const { data, error } = await getClient()
+      .from('customer_payments')
+      .select('*, car:cars!customer_payments_car_id_fkey(name), customer:customers!customer_payments_car_id_fkey(full_name_latin)')
+      .order('created_at', { ascending: false })
+    if (error) return []
+    return ((data as any[]) || []).map(p => {
+      const { car, customer, ...rest } = p
+      return { ...rest, car_name: car?.name, customer_name: customer?.full_name_latin }
+    })
+  } catch { return [] }
+}
+
+export async function createCustomerPayment(payload: Partial<CustomerPayment>): Promise<CustomerPayment> {
+  const { data, error } = await getClient().from('customer_payments').insert(payload).select().single()
+  if (error) handleError('createCustomerPayment failed', error)
+  return data as CustomerPayment
+}
+
+export async function deleteCustomerPayment(id: string, receiptUrl?: string): Promise<void> {
+  if (receiptUrl) {
+    await getClient().storage.from('car_attachments').remove([receiptUrl])
+  }
+  const { error } = await getClient().from('customer_payments').delete().eq('id', id)
+  if (error) handleError('deleteCustomerPayment failed', error)
 }

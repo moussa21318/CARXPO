@@ -12,7 +12,9 @@
     "no_data": "لا توجد بيانات",
     "details": "تفاصيل",
     "yes": "نعم",
-    "no": "لا"
+    "no": "لا",
+    "close": "إغلاق",
+    "select": "اختيار"
   },
   "nav": {
     "dashboard": "لوحة القيادة",
@@ -23,7 +25,8 @@
     "export": "تصدير Excel",
     "logout": "تسجيل خروج",
     "view_table": "قائمة",
-    "view_cards": "بطاقات"
+    "view_cards": "بطاقات",
+    "payments": "كشف حسابات"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -195,5 +198,25 @@
   "theme": {
     "dark": "داكن",
     "light": "فاتح"
+  },
+  "payments": {
+    "title": "كشف حسابات الزبون",
+    "add": "إضافة دفعة",
+    "quick_add": "دفعة سريعة",
+    "amount": "المبلغ",
+    "date": "تاريخ الدفعة",
+    "method": "طريقة الدفع",
+    "receipt": "إيصال",
+    "notes": "ملاحظات",
+    "total": "إجمالي المحصل",
+    "total_paid": "إجمالي المدفوع",
+    "debt": "المتبقي",
+    "payment_history": "سجل الدفعات"
+  },
+  "payment_method": {
+    "cash": "نقداً",
+    "bank_transfer": "تحويل بنكي",
+    "check": "شيك",
+    "credit_card": "بطاقة ائتمان"
   }
 }

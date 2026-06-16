@@ -5,6 +5,8 @@ export type DeleteRequestStatus = 'pending' | 'approved' | 'rejected'
 export type NotificationType = 'car_added' | 'car_updated' | 'car_deleted' | 'edit_requested' | 'edit_approved' | 'edit_rejected' | 'stage_changed' | 'car_confirmed'
 export type Lang = 'ar' | 'fr' | 'en'
 
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'credit_card'
+
 export interface User {
   id: string
   username: string
@@ -142,3 +144,22 @@ export const STAGE_ORDER: CarStage[] = ['request', 'deposit', 'purchase', 'shipp
 export const MODEL_YEARS = [2026, 2025, 2024, 2023, 2022, 2021]
 
 export const FEE_LABELS: (keyof CarFees)[] = ['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02']
+
+export interface CustomerPayment {
+  id: string
+  car_id: string
+  amount: number
+  payment_date: string
+  payment_method: PaymentMethod
+  receipt_url: string | null
+  notes: string
+  created_by: string
+  created_at: string
+}
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: 'payment_method.cash',
+  bank_transfer: 'payment_method.bank_transfer',
+  check: 'payment_method.check',
+  credit_card: 'payment_method.credit_card',
+}
