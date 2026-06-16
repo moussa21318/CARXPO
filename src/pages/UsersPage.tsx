@@ -127,22 +127,22 @@ export default function UsersPage() {
             <h2 className="text-xl font-bold mb-4">{editing ? t('users.edit') : t('users.add')}</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('users.username')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('users.username')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
                 <input value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                   className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('users.full_name')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('users.full_name')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
                 <input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
                   className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('users.password')} {editing ? '(leave empty to keep)' : ''}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('users.password')} {editing ? '(leave empty to keep)' : ''}{!editing && <> <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></>}</label>
                 <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('users.role')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('users.role')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
                 <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as UserRole }))}
                   className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="employee">{t('users.employee')}</option>

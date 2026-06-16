@@ -14,7 +14,8 @@
     "yes": "Oui",
     "no": "Non",
     "close": "Fermer",
-    "select": "Sélectionner"
+    "select": "Sélectionner",
+    "required": "Requis"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -213,7 +214,11 @@
     "debt": "Restant dû",
     "payment_history": "Historique des paiements",
     "edit": "Modifier le paiement",
-    "current_receipt": "Actuel"
+    "current_receipt": "Actuel",
+    "car_payments": "Historique des paiements",
+    "general_settlement": "Règlement général",
+    "notes_column": "Notes",
+    "no_client": "—"
   },
   "payment_method": {
     "cash": "Espèces",

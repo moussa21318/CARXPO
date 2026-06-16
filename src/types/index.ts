@@ -147,7 +147,7 @@ export const FEE_LABELS: (keyof CarFees)[] = ['deposit', 'deposit_02', 'transpor
 
 export interface CustomerPayment {
   id: string
-  car_id: string
+  car_id: string | null
   amount: number
   payment_date: string
   payment_method: PaymentMethod

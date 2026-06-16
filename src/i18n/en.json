@@ -14,7 +14,8 @@
     "yes": "Yes",
     "no": "No",
     "close": "Close",
-    "select": "Select"
+    "select": "Select",
+    "required": "Required"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -213,7 +214,11 @@
     "debt": "Remaining",
     "payment_history": "Payment History",
     "edit": "Edit Payment",
-    "current_receipt": "Current"
+    "current_receipt": "Current",
+    "car_payments": "Car Payment History",
+    "general_settlement": "General Settlement",
+    "notes_column": "Notes",
+    "no_client": "—"
   },
   "payment_method": {
     "cash": "Cash",

@@ -140,7 +140,7 @@ CREATE TABLE delete_requests (
 -- Customer payments (track payments received from end customer)
 CREATE TABLE customer_payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  car_id UUID REFERENCES cars(id) ON DELETE CASCADE,
+  car_id UUID REFERENCES cars(id) ON DELETE SET NULL,
   amount NUMERIC(12,2) NOT NULL,
   payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
   payment_method TEXT DEFAULT 'cash' CHECK (payment_method IN ('cash','bank_transfer','check','credit_card')),

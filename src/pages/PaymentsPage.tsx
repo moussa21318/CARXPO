@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, getCustomers, getAllCarFees, getCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient } from '../db/cloud'
-import { PAYMENT_METHOD_LABELS, type Car, type CarFees, type Customer, type CustomerPayment, type PaymentMethod } from '../types'
+import { getCars, getAllRequestClients, getAllCarFees, getCustomerPayments, getGeneralPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient } from '../db/cloud'
+import { PAYMENT_METHOD_LABELS, type Car, type CarFees, type RequestClient, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 import { uploadFile } from '../utils/upload'
 
 interface CustomerAccount {
-  customer: Customer
-  car: Car
+  requestClient: RequestClient | null
+  car: Car | null
   fees: CarFees | null
   payments: CustomerPayment[]
   totalFees: number
   totalPaid: number
   debt: number
+  notes: string
 }
 
 export default function PaymentsPage() {
@@ -39,18 +40,33 @@ export default function PaymentsPage() {
 
   const loadData = async () => {
     setLoading(true)
-    const [cars, customers, allFees] = await Promise.all([
-      getCars(), getCustomers(), getAllCarFees(),
+    const [cars, requestClients, allFees] = await Promise.all([
+      getCars(), getAllRequestClients(), getAllCarFees(),
     ])
     const allAccounts: CustomerAccount[] = []
-    for (const cust of customers) {
-      const car = cars.find(c => c.id === cust.car_id)
+    for (const rc of requestClients) {
+      const car = cars.find(c => c.id === rc.car_id)
       if (!car) continue
       const fees = allFees.find(f => f.car_id === car.id) || null
       const payments = await getCustomerPayments(car.id)
       const totalFees = fees ? fees.deposit + fees.deposit_02 + fees.transport_01 + fees.parking + fees.other_fees + fees.transport_02 : 0
       const totalPaid = payments.reduce((s, p) => s + p.amount, 0)
-      allAccounts.push({ customer: cust, car, fees, payments, totalFees, totalPaid, debt: totalFees - totalPaid })
+      allAccounts.push({ requestClient: rc, car, fees, payments, totalFees, totalPaid, debt: totalFees - totalPaid, notes: '' })
+    }
+    const generalPayments = await getGeneralPayments()
+    if (generalPayments.length > 0) {
+      const totalPaid = generalPayments.reduce((s, p) => s + p.amount, 0)
+      const combinedNotes = generalPayments.map(p => p.notes).filter(Boolean).join('; ')
+      allAccounts.push({
+        requestClient: null,
+        car: null,
+        fees: null,
+        payments: generalPayments,
+        totalFees: 0,
+        totalPaid,
+        debt: -totalPaid,
+        notes: combinedNotes || t('payments.general_settlement'),
+      })
     }
     setAccounts(allAccounts)
     setLoading(false)
@@ -59,14 +75,15 @@ export default function PaymentsPage() {
   useEffect(() => { loadData() }, [])
 
   const handleQuickPay = async () => {
-    if (!user || !quickPayCarId || quickPayAmount <= 0) return
+    if (!user || quickPayAmount <= 0) return
     let receiptUrl: string | null = null
+    const carId = (quickPayCarId && quickPayCarId !== '__general__') ? quickPayCarId : null
     if (quickPayReceipt) {
-      const result = await uploadFile('car_attachments', `receipts/${quickPayCarId}`, quickPayReceipt)
+      const result = await uploadFile('car_attachments', carId ? `receipts/${carId}` : 'receipts/general', quickPayReceipt)
       receiptUrl = result.storagePath
     }
     await createCustomerPayment({
-      car_id: quickPayCarId,
+      car_id: carId,
       amount: quickPayAmount,
       payment_date: quickPayDate,
       payment_method: quickPayMethod,
@@ -85,8 +102,12 @@ export default function PaymentsPage() {
   }
 
   const openDetail = async (acc: CustomerAccount) => {
-    const payments = await getCustomerPayments(acc.car.id)
-    setDetailAccount({ ...acc, payments })
+    if (acc.car) {
+      const payments = await getCustomerPayments(acc.car.id)
+      setDetailAccount({ ...acc, payments })
+    } else {
+      setDetailAccount(acc)
+    }
     setDetailOpen(true)
   }
 
@@ -103,7 +124,8 @@ export default function PaymentsPage() {
     if (!editPayment) return
     let receiptUrl = editPayment.receipt_url
     if (editReceipt) {
-      const result = await uploadFile('car_attachments', `receipts/${editPayment.car_id}`, editReceipt)
+      const receiptPath = editPayment.car_id ? `receipts/${editPayment.car_id}` : 'receipts/general'
+      const result = await uploadFile('car_attachments', receiptPath, editReceipt)
       receiptUrl = result.storagePath
     }
     await updateCustomerPayment(editPayment.id, {
@@ -121,8 +143,12 @@ export default function PaymentsPage() {
     await deleteCustomerPayment(payment.id, payment.receipt_url || undefined)
     loadData()
     if (detailOpen && detailAccount) {
-      const payments = await getCustomerPayments(detailAccount.car.id)
-      setDetailAccount({ ...detailAccount, payments })
+      if (detailAccount.car) {
+        const payments = await getCustomerPayments(detailAccount.car.id)
+        setDetailAccount({ ...detailAccount, payments })
+      } else {
+        setDetailAccount({ ...detailAccount, payments: detailAccount.payments.filter(p => p.id !== payment.id) })
+      }
     }
   }
 
@@ -147,29 +173,34 @@ export default function PaymentsPage() {
           <table className="w-full min-w-[700px]">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.customer_info')}</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.request_client')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.name')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.total_fees')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.total_paid')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.debt')}</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.notes_column')}</th>
                 <th className="text-left p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.details')}</th>
               </tr>
             </thead>
             <tbody>
               {accounts.map(acc => (
-                <tr key={acc.customer.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <tr key={acc.car?.id || 'general'} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="p-3">
-                    <div className="text-sm font-medium">{acc.customer.full_name_latin}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{acc.customer.phone}</div>
+                    {acc.requestClient ? (
+                      <div className="text-sm font-medium">{acc.requestClient.name}</div>
+                    ) : (
+                      <div className="text-sm text-gray-400">{t('payments.no_client')}</div>
+                    )}
                   </td>
-                  <td className="p-3 text-sm text-gray-600 dark:text-gray-300">{acc.car.name} ({acc.car.model_year})</td>
-                  <td className="p-3 text-sm">{formatPrice(acc.totalFees)}</td>
+                  <td className="p-3 text-sm text-gray-600 dark:text-gray-300">{acc.car ? `${acc.car.name} (${acc.car.model_year})` : '—'}</td>
+                  <td className="p-3 text-sm">{acc.car ? formatPrice(acc.totalFees) : '—'}</td>
                   <td className="p-3 text-sm text-green-600 dark:text-green-400">{formatPrice(acc.totalPaid)}</td>
                   <td className="p-3 text-sm">
                     <span className={`font-semibold ${acc.debt > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                      {acc.debt > 0 ? formatPrice(acc.debt) : '₩0'}
+                      {acc.debt > 0 ? formatPrice(acc.debt) : acc.debt < 0 ? `-${formatPrice(Math.abs(acc.debt))}` : '₩0'}
                     </span>
                   </td>
+                  <td className="p-3 text-xs text-gray-500 dark:text-gray-400 max-w-[150px] truncate">{acc.notes || '—'}</td>
                   <td className="p-3">
                     <button onClick={() => openDetail(acc)}
                       className="text-blue-600 dark:text-blue-400 hover:underline text-sm">{t('app.details')}</button>
@@ -188,22 +219,23 @@ export default function PaymentsPage() {
                onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold">{t('payments.quick_add')}</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.name')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.name')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <select value={quickPayCarId} onChange={e => setQuickPayCarId(e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
                 <option value="">{t('app.select')}</option>
-                {accounts.map(acc => (
-                  <option key={acc.car.id} value={acc.car.id}>{acc.car.name} — {acc.customer.full_name_latin}</option>
+                <option value="__general__">{t('payments.general_settlement')}</option>
+                {accounts.filter(a => a.car).map(acc => (
+                  <option key={acc.car!.id} value={acc.car!.id}>{acc.car!.name} — {acc.requestClient ? acc.requestClient.name : '—'}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="number" value={quickPayAmount || ''} onChange={e => setQuickPayAmount(Number(e.target.value))} min={0}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="date" value={quickPayDate} onChange={e => setQuickPayDate(e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
@@ -245,12 +277,12 @@ export default function PaymentsPage() {
              onClick={() => setDetailOpen(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-lg p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto"
                onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold">{detailAccount.customer.full_name_latin}</h2>
-            <div className="text-sm text-gray-500 dark:text-gray-400">{detailAccount.car.name} ({detailAccount.car.model_year})</div>
+            <h2 className="text-lg font-semibold">{detailAccount.requestClient ? detailAccount.requestClient.name : (detailAccount.car ? detailAccount.car.name : t('payments.general_settlement'))}</h2>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{detailAccount.car ? `${detailAccount.car.name} (${detailAccount.car.model_year})` : detailAccount.notes}</div>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <div className="text-xs text-gray-500 dark:text-gray-400">{t('car.total_fees')}</div>
-                <div className="font-semibold">{formatPrice(detailAccount.totalFees)}</div>
+                <div className="font-semibold">{detailAccount.car ? formatPrice(detailAccount.totalFees) : '—'}</div>
               </div>
               <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3">
                 <div className="text-xs text-gray-500 dark:text-gray-400">{t('payments.total_paid')}</div>
@@ -306,12 +338,12 @@ export default function PaymentsPage() {
                onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold">{t('payments.edit')}</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="number" value={editAmount || ''} onChange={e => setEditAmount(Number(e.target.value))} min={0}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>

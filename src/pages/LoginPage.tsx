@@ -27,13 +27,13 @@ export default function LoginPage() {
         <p className="text-center text-gray-500 dark:text-gray-400 mb-8">{t('auth.login')}</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('auth.username')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('auth.username')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
             <input value={username} onChange={e => setUsername(e.target.value)}
               className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               required />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('auth.password')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('auth.password')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}
               className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               required />

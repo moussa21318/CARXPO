@@ -140,12 +140,12 @@ export default function CarForm() {
       <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-4">
         {error && <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-300">{error}</div>}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.name')} *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.name')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
           <input value={name} onChange={e => setName(e.target.value)} required
             className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.model_year')} *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.model_year')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
           <select value={modelYear} onChange={e => setModelYear(Number(e.target.value))}
             className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             {MODEL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}

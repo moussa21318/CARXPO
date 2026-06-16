@@ -474,7 +474,7 @@ export default function CarDetails() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold">{t('payments.title')}</h2>
+          <h2 className="font-semibold">{t('payments.car_payments')}</h2>
           {canEdit && (
             <button onClick={() => setPaymentOpen(true)}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
@@ -520,7 +520,7 @@ export default function CarDetails() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {(['full_name_latin', 'national_id', 'address_latin', 'postal_code', 'phone', 'email'] as const).map(key => (
               <div key={key}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t(`car.${key}`)}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t(`car.${key}`)}{key !== 'email' && <> <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></>}</label>
                 <input value={customerData?.[key] || ''}
                   onChange={e => setCustomerData((prev: Partial<Customer>) => ({ ...prev, [key]: e.target.value }))}
                   className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
@@ -591,7 +591,7 @@ export default function CarDetails() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.model_year')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.model_year')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <select value={modalMy} onChange={e => setModalMy(Number(e.target.value))}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
                 {MODEL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
@@ -674,12 +674,12 @@ export default function CarDetails() {
                onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold">{t('payments.add')}</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="number" value={paymentAmount || ''} onChange={e => setPaymentAmount(Number(e.target.value))} min={0}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
@@ -723,12 +723,12 @@ export default function CarDetails() {
                onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold">{t('payments.edit')}</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="number" value={editAmount || ''} onChange={e => setEditAmount(Number(e.target.value))} min={0}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>

@@ -14,7 +14,8 @@
     "yes": "نعم",
     "no": "لا",
     "close": "إغلاق",
-    "select": "اختيار"
+    "select": "اختيار",
+    "required": "إجباري"
   },
   "nav": {
     "dashboard": "لوحة القيادة",
@@ -213,7 +214,11 @@
     "debt": "المتبقي",
     "payment_history": "سجل الدفعات",
     "edit": "تعديل دفعة",
-    "current_receipt": "الحالي"
+    "current_receipt": "الحالي",
+    "car_payments": "سجل دفعات السيارة",
+    "general_settlement": "تسوية عامة",
+    "notes_column": "ملاحظات",
+    "no_client": "—"
   },
   "payment_method": {
     "cash": "نقداً",

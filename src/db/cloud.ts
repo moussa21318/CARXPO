@@ -420,17 +420,25 @@ export async function getCustomerPayments(carId: string): Promise<CustomerPaymen
   } catch { return [] }
 }
 
-export async function getAllCustomerPayments(): Promise<(CustomerPayment & { car_name?: string; customer_name?: string })[]> {
+export async function getAllCustomerPayments(): Promise<(CustomerPayment & { car_name?: string; client_name?: string })[]> {
   try {
     const { data, error } = await getClient()
       .from('customer_payments')
-      .select('*, car:cars!customer_payments_car_id_fkey(name), customer:customers!customer_payments_car_id_fkey(full_name_latin)')
+      .select('*, car:cars!customer_payments_car_id_fkey(name), client:request_clients!customer_payments_car_id_fkey(name)')
       .order('created_at', { ascending: false })
     if (error) return []
     return ((data as any[]) || []).map(p => {
-      const { car, customer, ...rest } = p
-      return { ...rest, car_name: car?.name, customer_name: customer?.full_name_latin }
+      const { car, client, ...rest } = p
+      return { ...rest, car_name: car?.name, client_name: client?.name }
     })
+  } catch { return [] }
+}
+
+export async function getGeneralPayments(): Promise<CustomerPayment[]> {
+  try {
+    const { data, error } = await getClient().from('customer_payments').select('*').is('car_id', null).order('created_at', { ascending: false })
+    if (error) return []
+    return (data as CustomerPayment[]) || []
   } catch { return [] }
 }
 
