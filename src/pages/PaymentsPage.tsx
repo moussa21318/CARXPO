@@ -23,6 +23,7 @@ export default function PaymentsPage() {
   const [accounts, setAccounts] = useState<CustomerAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [quickPayOpen, setQuickPayOpen] = useState(false)
+  const [quickPayClientName, setQuickPayClientName] = useState('')
   const [quickPayCarId, setQuickPayCarId] = useState('')
   const [quickPayAmount, setQuickPayAmount] = useState(0)
   const [quickPayDate, setQuickPayDate] = useState(new Date().toISOString().slice(0, 10))
@@ -75,9 +76,9 @@ export default function PaymentsPage() {
   useEffect(() => { loadData() }, [])
 
   const handleQuickPay = async () => {
-    if (!user || quickPayAmount <= 0) return
+    if (!user || !quickPayClientName || quickPayAmount <= 0) return
     let receiptUrl: string | null = null
-    const carId = (quickPayCarId && quickPayCarId !== '__general__') ? quickPayCarId : null
+    const carId = quickPayCarId || null
     if (quickPayReceipt) {
       const result = await uploadFile('car_attachments', carId ? `receipts/${carId}` : 'receipts/general', quickPayReceipt)
       receiptUrl = result.storagePath
@@ -92,6 +93,7 @@ export default function PaymentsPage() {
       created_by: user.id,
     })
     setQuickPayOpen(false)
+    setQuickPayClientName('')
     setQuickPayCarId('')
     setQuickPayAmount(0)
     setQuickPayDate(new Date().toISOString().slice(0, 10))
@@ -100,6 +102,11 @@ export default function PaymentsPage() {
     setQuickPayNotes('')
     loadData()
   }
+
+  const clientNames = [...new Set(accounts.filter(a => a.requestClient).map(a => a.requestClient!.name))]
+  const filteredCars = quickPayClientName
+    ? accounts.filter(a => a.requestClient?.name === quickPayClientName && a.car)
+    : []
 
   const openDetail = async (acc: CustomerAccount) => {
     if (acc.car) {
@@ -159,7 +166,7 @@ export default function PaymentsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold">{t('payments.title')}</h1>
         {canEdit && (
-          <button onClick={() => setQuickPayOpen(true)}
+          <button onClick={() => { setQuickPayClientName(''); setQuickPayCarId(''); setQuickPayAmount(0); setQuickPayDate(new Date().toISOString().slice(0, 10)); setQuickPayMethod('cash'); setQuickPayReceipt(null); setQuickPayNotes(''); setQuickPayOpen(true) }}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
             + {t('payments.quick_add')}
           </button>
@@ -219,13 +226,22 @@ export default function PaymentsPage() {
                onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold">{t('payments.quick_add')}</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.name')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
-              <select value={quickPayCarId} onChange={e => setQuickPayCarId(e.target.value)}
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.client_name')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
+              <select value={quickPayClientName} onChange={e => { setQuickPayClientName(e.target.value); setQuickPayCarId('') }}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
                 <option value="">{t('app.select')}</option>
-                <option value="__general__">{t('payments.general_settlement')}</option>
-                {accounts.filter(a => a.car).map(acc => (
-                  <option key={acc.car!.id} value={acc.car!.id}>{acc.car!.name} — {acc.requestClient ? acc.requestClient.name : '—'}</option>
+                {clientNames.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.name')}</label>
+              <select value={quickPayCarId} onChange={e => setQuickPayCarId(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                <option value="">{t('payments.general_settlement')}</option>
+                {filteredCars.map(acc => (
+                  <option key={acc.car!.id} value={acc.car!.id}>{acc.car!.name} ({acc.car!.model_year})</option>
                 ))}
               </select>
             </div>
@@ -263,7 +279,7 @@ export default function PaymentsPage() {
                 className="flex-1 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 dark:bg-gray-600 text-sm transition-colors">
                 {t('app.cancel')}
               </button>
-              <button onClick={handleQuickPay} disabled={!quickPayCarId || quickPayAmount <= 0}
+              <button onClick={handleQuickPay} disabled={!quickPayClientName || quickPayAmount <= 0}
                 className="flex-1 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors disabled:opacity-50">
                 {t('app.save')}
               </button>
