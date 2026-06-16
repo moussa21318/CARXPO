@@ -8,7 +8,7 @@ import {
   getRequestClient, getCustomer, upsertCustomer,
   getAttachments, addAttachment, deleteAttachment,
   getDeleteRequests, createDeleteRequest, reviewDeleteRequest,
-  getCustomerPayments, createCustomerPayment, deleteCustomerPayment,
+  getCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment,
   getClient,
 } from '../db/cloud'
 import { uploadFile } from '../utils/upload'
@@ -45,6 +45,12 @@ export default function CarDetails() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
   const [paymentReceipt, setPaymentReceipt] = useState<File | null>(null)
   const [paymentNotes, setPaymentNotes] = useState('')
+  const [paymentEdit, setPaymentEdit] = useState<CustomerPayment | null>(null)
+  const [editAmount, setEditAmount] = useState(0)
+  const [editDate, setEditDate] = useState('')
+  const [editMethod, setEditMethod] = useState<PaymentMethod>('cash')
+  const [editNotes, setEditNotes] = useState('')
+  const [editReceipt, setEditReceipt] = useState<File | null>(null)
   const [modalLp, setModalLp] = useState('')
   const [modalMy, setModalMy] = useState(0)
   const [modalPrice, setModalPrice] = useState(0)
@@ -202,6 +208,33 @@ export default function CarDetails() {
 
   const handleDeletePayment = async (payment: CustomerPayment) => {
     await deleteCustomerPayment(payment.id, payment.receipt_url || undefined)
+    loadData()
+  }
+
+  const openEditPayment = (payment: CustomerPayment) => {
+    setPaymentEdit(payment)
+    setEditAmount(payment.amount)
+    setEditDate(payment.payment_date)
+    setEditMethod(payment.payment_method)
+    setEditNotes(payment.notes)
+    setEditReceipt(null)
+  }
+
+  const handleUpdatePayment = async () => {
+    if (!paymentEdit) return
+    let receiptUrl = paymentEdit.receipt_url
+    if (editReceipt) {
+      const result = await uploadFile('car_attachments', `receipts/${paymentEdit.car_id}`, editReceipt)
+      receiptUrl = result.storagePath
+    }
+    await updateCustomerPayment(paymentEdit.id, {
+      amount: editAmount,
+      payment_date: editDate,
+      payment_method: editMethod,
+      notes: editNotes,
+      receipt_url: receiptUrl,
+    })
+    setPaymentEdit(null)
     loadData()
   }
 
@@ -464,9 +497,13 @@ export default function CarDetails() {
                     className="text-blue-600 dark:text-blue-400 hover:underline text-xs">{t('payments.receipt')}</a>
                 )}
                 {p.notes && <span className="text-gray-500 dark:text-gray-400 text-xs">{p.notes}</span>}
-                {canEdit && (
-                  <button onClick={() => handleDeletePayment(p)}
-                    className="text-red-500 hover:text-red-700 text-xs px-1 ml-auto">✕</button>
+                {user?.role === 'admin' && (
+                  <>
+                    <button onClick={() => openEditPayment(p)}
+                      className="text-blue-500 hover:text-blue-700 text-xs px-1">✎</button>
+                    <button onClick={() => handleDeletePayment(p)}
+                      className="text-red-500 hover:text-red-700 text-xs px-1">✕</button>
+                  </>
                 )}
               </div>
             ))}
@@ -672,6 +709,59 @@ export default function CarDetails() {
               </button>
               <button onClick={handleAddPayment} disabled={paymentAmount <= 0}
                 className="flex-1 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors disabled:opacity-50">
+                {t('app.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {paymentEdit && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setPaymentEdit(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('payments.edit')}</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')}</label>
+              <input type="number" value={editAmount || ''} onChange={e => setEditAmount(Number(e.target.value))} min={0}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')}</label>
+              <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.method')}</label>
+              <select value={editMethod} onChange={e => setEditMethod(e.target.value as PaymentMethod)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                {(['cash', 'bank_transfer', 'check', 'credit_card'] as PaymentMethod[]).map(m => (
+                  <option key={m} value={m}>{t(PAYMENT_METHOD_LABELS[m])}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.receipt')}</label>
+              <input type="file" onChange={e => setEditReceipt(e.target.files?.[0] || null)}
+                accept="image/*,.pdf" className="w-full text-sm" />
+              {paymentEdit.receipt_url && (
+                <p className="text-xs text-gray-500 mt-1">{t('payments.current_receipt')}: <a href={getClient().storage.from('car_attachments').getPublicUrl(paymentEdit.receipt_url).data.publicUrl}
+                  target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{t('payments.receipt')}</a></p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.notes')}</label>
+              <textarea value={editNotes} onChange={e => setEditNotes(e.target.value)}
+                rows={2} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setPaymentEdit(null)}
+                className="flex-1 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 dark:bg-gray-600 text-sm transition-colors">
+                {t('app.cancel')}
+              </button>
+              <button onClick={handleUpdatePayment} disabled={editAmount <= 0}
+                className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors disabled:opacity-50">
                 {t('app.save')}
               </button>
             </div>

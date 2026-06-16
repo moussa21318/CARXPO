@@ -211,7 +211,9 @@
     "total": "Total Collected",
     "total_paid": "Total Paid",
     "debt": "Remaining",
-    "payment_history": "Payment History"
+    "payment_history": "Payment History",
+    "edit": "Edit Payment",
+    "current_receipt": "Current"
   },
   "payment_method": {
     "cash": "Cash",

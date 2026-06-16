@@ -211,7 +211,9 @@
     "total": "إجمالي المحصل",
     "total_paid": "إجمالي المدفوع",
     "debt": "المتبقي",
-    "payment_history": "سجل الدفعات"
+    "payment_history": "سجل الدفعات",
+    "edit": "تعديل دفعة",
+    "current_receipt": "الحالي"
   },
   "payment_method": {
     "cash": "نقداً",

@@ -211,7 +211,9 @@
     "total": "Total encaissé",
     "total_paid": "Total payé",
     "debt": "Restant dû",
-    "payment_history": "Historique des paiements"
+    "payment_history": "Historique des paiements",
+    "edit": "Modifier le paiement",
+    "current_receipt": "Actuel"
   },
   "payment_method": {
     "cash": "Espèces",

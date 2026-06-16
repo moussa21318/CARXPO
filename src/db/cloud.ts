@@ -440,6 +440,12 @@ export async function createCustomerPayment(payload: Partial<CustomerPayment>): 
   return data as CustomerPayment
 }
 
+export async function updateCustomerPayment(id: string, payload: Partial<CustomerPayment>): Promise<CustomerPayment> {
+  const { data, error } = await getClient().from('customer_payments').update(payload).eq('id', id).select().single()
+  if (error) handleError('updateCustomerPayment failed', error)
+  return data as CustomerPayment
+}
+
 export async function deleteCustomerPayment(id: string, receiptUrl?: string): Promise<void> {
   if (receiptUrl) {
     await getClient().storage.from('car_attachments').remove([receiptUrl])
