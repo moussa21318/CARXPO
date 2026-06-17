@@ -30,6 +30,10 @@ export default function CarForm() {
   const [allClients, setAllClients] = useState<Client[]>([])
   const [clientModalOpen, setClientModalOpen] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
+  const [clientAddMode, setClientAddMode] = useState(false)
+  const [newClientName, setNewClientName] = useState('')
+  const [newClientPhone, setNewClientPhone] = useState('')
+  const [addingClient, setAddingClient] = useState(false)
 
   useEffect(() => {
     getAllClients().then(setAllClients).catch(() => {})
@@ -75,10 +79,23 @@ export default function CarForm() {
   }
 
   const addNewClient = () => {
-    setClientId(null)
-    setClientName('')
-    setClientPhone('')
-    setClientModalOpen(false)
+    setNewClientName('')
+    setNewClientPhone('')
+    setClientAddMode(true)
+  }
+
+  const handleAddClient = async () => {
+    if (!newClientName.trim()) return
+    setAddingClient(true)
+    try {
+      const cl = await upsertClient(newClientName.trim(), newClientPhone)
+      setClientAddMode(false)
+      setClientModalOpen(false)
+      setClientId(cl.id)
+      setClientName(cl.name)
+      setClientPhone(cl.phone)
+    } catch { /* ignore */ }
+    setAddingClient(false)
   }
 
   const pickContact = async () => {
@@ -234,7 +251,7 @@ export default function CarForm() {
           </div>
         </div>
 
-        {clientModalOpen && (
+        {clientModalOpen && !clientAddMode && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
                onClick={() => setClientModalOpen(false)}>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col"
@@ -265,6 +282,36 @@ export default function CarForm() {
                 <button type="button" onClick={addNewClient}
                   className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors">
                   + {t('clients.add')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {clientModalOpen && clientAddMode && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+               onClick={() => { setClientAddMode(false); setClientModalOpen(false) }}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+                 onClick={e => e.stopPropagation()}>
+              <h2 className="text-lg font-semibold">{t('clients.add')}</h2>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('clients.name')} <span className="text-red-500">*</span></label>
+                <input value={newClientName} onChange={e => setNewClientName(e.target.value)}
+                  className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" autoFocus />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('clients.phone')}</label>
+                <input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)}
+                  className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setClientAddMode(false)}
+                  className="flex-1 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm transition-colors">
+                  {t('app.cancel')}
+                </button>
+                <button type="button" onClick={handleAddClient} disabled={addingClient || !newClientName.trim()}
+                  className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors disabled:opacity-50">
+                  {addingClient ? t('app.loading') : t('app.save')}
                 </button>
               </div>
             </div>
