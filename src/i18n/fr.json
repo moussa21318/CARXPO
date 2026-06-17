@@ -218,7 +218,16 @@
     "car_payments": "Historique des paiements",
     "general_settlement": "Règlement général",
     "notes_column": "Notes",
-    "no_client": "—"
+    "no_client": "—",
+    "filter_client": "Rechercher par client",
+    "filter_car": "Rechercher par voiture",
+    "filter_status": "Tous les statuts",
+    "filter_all": "Tous",
+    "filter_in_debt": "Endetté",
+    "filter_settled": "Soldé",
+    "filter_general": "Général",
+    "filter_from_date": "Du",
+    "filter_to_date": "Au"
   },
   "payment_method": {
     "cash": "Espèces",

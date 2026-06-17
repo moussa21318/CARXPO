@@ -218,7 +218,16 @@
     "car_payments": "سجل دفعات السيارة",
     "general_settlement": "تسوية عامة",
     "notes_column": "ملاحظات",
-    "no_client": "—"
+    "no_client": "—",
+    "filter_client": "بحث باسم الزبون",
+    "filter_car": "بحث باسم السيارة",
+    "filter_status": "جميع الحالات",
+    "filter_all": "الكل",
+    "filter_in_debt": "مديون",
+    "filter_settled": "مسدد",
+    "filter_general": "تسوية عامة",
+    "filter_from_date": "من تاريخ",
+    "filter_to_date": "إلى تاريخ"
   },
   "payment_method": {
     "cash": "نقداً",

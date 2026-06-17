@@ -218,7 +218,16 @@
     "car_payments": "Car Payment History",
     "general_settlement": "General Settlement",
     "notes_column": "Notes",
-    "no_client": "—"
+    "no_client": "—",
+    "filter_client": "Search by client name",
+    "filter_car": "Search by car name",
+    "filter_status": "All statuses",
+    "filter_all": "All",
+    "filter_in_debt": "In debt",
+    "filter_settled": "Settled",
+    "filter_general": "General",
+    "filter_from_date": "From date",
+    "filter_to_date": "To date"
   },
   "payment_method": {
     "cash": "Cash",

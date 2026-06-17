@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { getCars, getAllRequestClients, getAllCarFees, getCustomerPayments, getGeneralPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient } from '../db/cloud'
@@ -38,6 +38,36 @@ export default function PaymentsPage() {
   const [editMethod, setEditMethod] = useState<PaymentMethod>('cash')
   const [editNotes, setEditNotes] = useState('')
   const [editReceipt, setEditReceipt] = useState<File | null>(null)
+
+  // Filter states
+  const [filterClient, setFilterClient] = useState('')
+  const [filterCar, setFilterCar] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterDateFrom, setFilterDateFrom] = useState('')
+  const [filterDateTo, setFilterDateTo] = useState('')
+
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(acc => {
+      if (filterClient && acc.requestClient?.name) {
+        if (!acc.requestClient.name.toLowerCase().includes(filterClient.toLowerCase())) return false
+      }
+      if (filterCar && acc.car?.name) {
+        if (!acc.car.name.toLowerCase().includes(filterCar.toLowerCase())) return false
+      }
+      if (filterStatus === 'in_debt' && acc.debt <= 0) return false
+      if (filterStatus === 'settled' && acc.debt > 0) return false
+      if (filterStatus === 'general' && acc.car) return false
+      if (filterDateFrom || filterDateTo) {
+        const hasPaymentInRange = acc.payments.some(p => {
+          if (filterDateFrom && p.payment_date < filterDateFrom) return false
+          if (filterDateTo && p.payment_date > filterDateTo) return false
+          return true
+        })
+        if (!hasPaymentInRange) return false
+      }
+      return true
+    })
+  }, [accounts, filterClient, filterCar, filterStatus, filterDateFrom, filterDateTo])
 
   const loadData = async () => {
     setLoading(true)
@@ -173,7 +203,29 @@ export default function PaymentsPage() {
         )}
       </div>
 
-      {accounts.length === 0 ? (
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-4">
+        <input type="text" value={filterClient} onChange={e => setFilterClient(e.target.value)}
+          placeholder={t('payments.filter_client')}
+          className="flex-1 min-w-[160px] p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+        <input type="text" value={filterCar} onChange={e => setFilterCar(e.target.value)}
+          placeholder={t('payments.filter_car')}
+          className="flex-1 min-w-[160px] p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+          className="min-w-[130px] p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+          <option value="all">{t('payments.filter_all')}</option>
+          <option value="in_debt">{t('payments.filter_in_debt')}</option>
+          <option value="settled">{t('payments.filter_settled')}</option>
+          <option value="general">{t('payments.filter_general')}</option>
+        </select>
+        <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
+          title={t('payments.filter_from_date')}
+          className="min-w-[140px] p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+        <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
+          title={t('payments.filter_to_date')}
+          className="min-w-[140px] p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      </div>
+
+      {filteredAccounts.length === 0 ? (
         <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('app.no_data')}</div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-x-auto">
@@ -190,7 +242,7 @@ export default function PaymentsPage() {
               </tr>
             </thead>
             <tbody>
-              {accounts.map(acc => (
+              {filteredAccounts.map(acc => (
                 <tr key={acc.car?.id || 'general'} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">
                     {acc.requestClient ? (
