@@ -232,7 +232,7 @@ export default function CarForm() {
                   className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 {clientId && (
                   <button type="button" onClick={() => { setClientId(null); setClientName(''); setClientPhone('') }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm">✕</button>
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm">✕</button>
                 )}
               </div>
             </div>
@@ -256,11 +256,11 @@ export default function CarForm() {
                onClick={() => setClientModalOpen(false)}>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col"
                  onClick={e => e.stopPropagation()}>
-              <div className="p-4 border-b dark:border-gray-700">
-                <h3 className="font-semibold mb-2">{t('car.request_client')}</h3>
+              <div className="p-5 sm:p-6 border-b dark:border-gray-700">
+                <h2 className="text-lg font-semibold mb-3">{t('car.request_client')}</h2>
                 <input value={clientSearch} onChange={e => setClientSearch(e.target.value)}
                   placeholder={t('clients.search')}
-                  className="w-full p-2 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" autoFocus />
+                  className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" autoFocus />
               </div>
               <div className="flex-1 overflow-y-auto">
                 {filteredClients.length === 0 ? (
@@ -268,19 +268,17 @@ export default function CarForm() {
                 ) : (
                   filteredClients.map(cl => (
                     <div key={cl.id} onClick={() => pickClient(cl)}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer border-b dark:border-gray-700/50 last:border-0">
-                      <div>
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{cl.name}</span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 mr-2 font-mono">{cl.code}</span>
-                      </div>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 ltr" dir="ltr">{cl.phone || '—'}</span>
+                      className="grid grid-cols-[60px_1fr_120px] gap-3 items-center px-5 sm:px-6 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer border-b dark:border-gray-700/50 last:border-0">
+                      <span className="text-xs text-gray-400 dark:text-gray-500 font-mono text-left">{cl.code || '—'}</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{cl.name}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 ltr text-right" dir="ltr">{cl.phone || '—'}</span>
                     </div>
                   ))
                 )}
               </div>
-              <div className="p-3 border-t dark:border-gray-700">
+              <div className="p-5 sm:p-6 pt-3 border-t dark:border-gray-700">
                 <button type="button" onClick={addNewClient}
-                  className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors">
+                  className="w-full p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 text-sm transition-colors font-medium">
                   + {t('clients.add')}
                 </button>
               </div>
