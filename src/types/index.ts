@@ -18,6 +18,13 @@ export interface User {
   updated_at: string
 }
 
+export interface Client {
+  id: string
+  name: string
+  phone: string
+  created_at: string
+}
+
 export interface Car {
   id: string
   name: string
@@ -28,6 +35,7 @@ export interface Car {
   initial_price: number
   notes: string
   code: string | null
+  client_id: string | null
   current_stage: CarStage
   confirmed: boolean
   created_by: string
@@ -51,13 +59,6 @@ export interface CarFees {
   parking_date: string | null
   other_fees_date: string | null
   transport_02_date: string | null
-}
-
-export interface RequestClient {
-  id: string
-  car_id: string
-  name: string
-  phone: string
 }
 
 export interface CarStageLog {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, getCustomers, getAllCarFees, getAllRequestClients } from '../db/cloud'
+import { getCars, getCustomers, getAllCarFees, getAllClients } from '../db/cloud'
 import { STAGE_LABELS, type CarStage } from '../types'
 import * as XLSX from 'xlsx'
 
@@ -62,13 +62,13 @@ export default function ExportPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [carData, rcData, custData, feesData] = await Promise.all([
-        getCars(), getAllRequestClients(), getCustomers(), getAllCarFees(),
+      const [carData, clData, custData, feesData] = await Promise.all([
+        getCars(), getAllClients(), getCustomers(), getAllCarFees(),
       ])
-      const rcMap = new Map(rcData.map(r => [r.car_id, r]))
+      const clientMap = new Map(clData.map(cl => [cl.id, cl]))
       const custMap = new Map(custData.map(c => [c.car_id, c]))
       const feesMap = new Map(feesData.map(f => [f.car_id, f]))
-      const merged = carData.map(car => ({ car, rc: rcMap.get(car.id), cust: custMap.get(car.id), fees: feesMap.get(car.id) }))
+      const merged = carData.map(car => ({ car, rc: car.client_id ? clientMap.get(car.client_id) : null, cust: custMap.get(car.id), fees: feesMap.get(car.id) }))
       setCars(merged)
       const active = order.filter(k => selected.includes(k))
       setPreview(merged.slice(0, 10).map(row => active.map(key => {

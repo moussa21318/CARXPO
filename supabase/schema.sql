@@ -9,10 +9,10 @@ DROP TABLE IF EXISTS edit_requests CASCADE;
 DROP TABLE IF EXISTS delete_requests CASCADE;
 DROP TABLE IF EXISTS car_attachments CASCADE;
 DROP TABLE IF EXISTS customers CASCADE;
-DROP TABLE IF EXISTS request_clients CASCADE;
 DROP TABLE IF EXISTS car_stage_logs CASCADE;
 DROP TABLE IF EXISTS car_fees CASCADE;
 DROP TABLE IF EXISTS cars CASCADE;
+DROP TABLE IF EXISTS clients CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Users table
@@ -27,6 +27,15 @@ CREATE TABLE users (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Clients
+CREATE TABLE clients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  phone TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS clients_name_phone_idx ON clients (name, phone);
+
 -- Cars table
 CREATE TABLE cars (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -38,6 +47,7 @@ CREATE TABLE cars (
   initial_price NUMERIC(12,2) DEFAULT 0,
   notes TEXT DEFAULT '',
   code VARCHAR(3) UNIQUE,
+  client_id UUID REFERENCES clients(id),
   current_stage TEXT NOT NULL DEFAULT 'request' CHECK (current_stage IN ('request','deposit','purchase','shipping_prep','shipping')),
   confirmed BOOLEAN DEFAULT false,
   created_by UUID REFERENCES users(id),
@@ -73,14 +83,6 @@ CREATE TABLE car_stage_logs (
   notes TEXT DEFAULT '',
   moved_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Request clients (initial order person)
-CREATE TABLE request_clients (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  car_id UUID UNIQUE REFERENCES cars(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  phone TEXT DEFAULT ''
 );
 
 -- Final customers (shipping prep)
@@ -192,6 +194,7 @@ CREATE TABLE notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_cars_created_at ON cars(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cars_client_id ON cars(client_id);
 CREATE INDEX IF NOT EXISTS idx_car_stage_logs_car_id ON car_stage_logs(car_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
@@ -202,7 +205,7 @@ ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE cars DISABLE ROW LEVEL SECURITY;
 ALTER TABLE car_fees DISABLE ROW LEVEL SECURITY;
 ALTER TABLE car_stage_logs DISABLE ROW LEVEL SECURITY;
-ALTER TABLE request_clients DISABLE ROW LEVEL SECURITY;
+ALTER TABLE clients DISABLE ROW LEVEL SECURITY;
 ALTER TABLE customers DISABLE ROW LEVEL SECURITY;
 ALTER TABLE edit_requests DISABLE ROW LEVEL SECURITY;
 ALTER TABLE delete_requests DISABLE ROW LEVEL SECURITY;

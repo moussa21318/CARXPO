@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, getAllRequestClients, getAllCarFees, getGeneralPayments, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient } from '../db/cloud'
+import { getCars, getAllClients, getAllCarFees, getGeneralPayments, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient } from '../db/cloud'
 import { PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 import { uploadFile } from '../utils/upload'
@@ -64,10 +64,10 @@ export default function PaymentsPage() {
 
   const loadData = async () => {
     setLoading(true)
-    const [cars, requestClients, allFees, allPayments, generalPayments] = await Promise.all([
-      getCars(), getAllRequestClients(), getAllCarFees(), getAllCustomerPayments(), getGeneralPayments(),
+    const [cars, clients, allFees, allPayments, generalPayments] = await Promise.all([
+      getCars(), getAllClients(), getAllCarFees(), getAllCustomerPayments(), getGeneralPayments(),
     ])
-    const rcMap = new Map(requestClients.map(rc => [rc.car_id, rc]))
+    const clientMap = new Map(clients.map(cl => [cl.id, cl]))
     const feeMap = new Map(allFees.map(f => [f.car_id, f]))
     const carMap = new Map(cars.map(c => [c.id, c]))
     const rows: TransactionRow[] = []
@@ -89,15 +89,15 @@ export default function PaymentsPage() {
     }
 
     const addPaymentRow = (payment: CustomerPayment) => {
-      const rc = payment.car_id ? rcMap.get(payment.car_id) : null
       const car = payment.car_id ? carMap.get(payment.car_id) : null
-      const clientName = rc?.name || (payment as any).client_name || ''
+      const cl = car?.client_id ? clientMap.get(car.client_id) : null
+      const clientName = cl?.name || ''
       const paymentLabel = payment.car_id ? (car?.code ? `${t('payments.add')} (${car.code})` : t('payments.add')) : t('payments.general_settlement')
       rows.push({
         id: `pay-${payment.id}`,
         date: payment.payment_date,
         clientName,
-        clientId: rc?.id || null,
+        clientId: cl?.id || null,
         carId: payment.car_id,
         carCode: car?.code || null,
         designation: paymentLabel,
@@ -128,17 +128,18 @@ export default function PaymentsPage() {
       transport_02: 'transport_02_date',
     }
 
-    for (const rc of requestClients) {
-      const car = carMap.get(rc.car_id)
-      if (!car) continue
-      const fees = feeMap.get(rc.car_id)
+    for (const car of cars) {
+      if (!car.client_id) continue
+      const cl = clientMap.get(car.client_id)
+      if (!cl) continue
+      const fees = feeMap.get(car.id)
       if (!fees) continue
       for (const key of FEE_LABELS) {
         const amount = fees[key] as number
         if (amount <= 0) continue
         const dateKey = feeDateKeys[key]
         const date = (fees as any)[dateKey] as string | null
-        addFeeRow(date || new Date().toISOString().slice(0, 10), rc.name, rc.id, car.id, car.code, t(feeKeyLabels[key] || key), amount)
+        addFeeRow(date || new Date().toISOString().slice(0, 10), cl.name, cl.id, car.id, car.code, t(feeKeyLabels[key] || key), amount)
       }
     }
 

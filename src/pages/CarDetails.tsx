@@ -5,14 +5,14 @@ import { useAuth } from '../auth/AuthContext'
 import {
   getCar, updateCar, deleteCar, getCarFees, upsertCarFees,
   getStageLogs, moveToStage,
-  getRequestClient, getCustomer, upsertCustomer,
+  getClientById, getCustomer, upsertCustomer,
   getAttachments, addAttachment, deleteAttachment,
   getDeleteRequests, createDeleteRequest, reviewDeleteRequest,
   getCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment,
   getClient,
 } from '../db/cloud'
 import { uploadFile } from '../utils/upload'
-import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, PAYMENT_METHOD_LABELS, type Car, type CarFees, type CarStageLog, type RequestClient, type Customer, type CarAttachment, type CarStage, type DeleteRequest, type CustomerPayment, type PaymentMethod } from '../types'
+import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, PAYMENT_METHOD_LABELS, type Car, type CarFees, type CarStageLog, type Client, type Customer, type CarAttachment, type CarStage, type DeleteRequest, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 
 export default function CarDetails() {
@@ -24,7 +24,7 @@ export default function CarDetails() {
   const [car, setCar] = useState<Car | null>(null)
   const [fees, setFees] = useState<CarFees | null>(null)
   const [stageLogs, setStageLogs] = useState<CarStageLog[]>([])
-  const [requestClient, setRequestClient] = useState<RequestClient | null>(null)
+  const [requestClient, setRequestClient] = useState<Client | null>(null)
   const [customerData, setCustomerData] = useState<Partial<Customer>>({})
   const [attachments, setAttachments] = useState<(CarAttachment & { publicUrl: string })[]>([])
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
@@ -57,13 +57,13 @@ export default function CarDetails() {
 
   const loadData = useCallback(async () => {
     if (!id) return
-    const [c, f, sl, rc, cust, att, dr, p] = await Promise.all([
-      getCar(id), getCarFees(id), getStageLogs(id), getRequestClient(id), getCustomer(id), getAttachments(id), getDeleteRequests(id), getCustomerPayments(id),
+    const [c, f, sl, cust, att, dr, p] = await Promise.all([
+      getCar(id), getCarFees(id), getStageLogs(id), getCustomer(id), getAttachments(id), getDeleteRequests(id), getCustomerPayments(id),
     ])
     setCar(c)
     setFees(f)
     setStageLogs(sl)
-    setRequestClient(rc)
+    setRequestClient(c?.client_id ? await getClientById(c.client_id) : null)
     setCustomerData(cust || {})
     setAttachments(att)
     setDeleteRequests(dr)

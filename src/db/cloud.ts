@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type {
-  User, Car, CarFees, CarStageLog, RequestClient, Customer,
+  User, Car, CarFees, CarStageLog, Client, Customer,
   EditRequest, ChangeLog, Notification, CarStage, CarAttachment, DeleteRequest, CustomerPayment,
 } from '../types'
 
@@ -223,27 +223,29 @@ export async function moveToStage(carId: string, stage: CarStage, evidenceUrl: s
   if (carErr) handleError('updateCar failed', carErr)
 }
 
-// --- Request Clients ---
-export async function getAllRequestClients(): Promise<RequestClient[]> {
+// --- Clients ---
+export async function getAllClients(): Promise<Client[]> {
   try {
-    const { data, error } = await getClient().from('request_clients').select('*')
+    const { data, error } = await getClient().from('clients').select('*').order('name', { ascending: true })
     if (error) return []
-    return (data as RequestClient[]) || []
+    return (data as Client[]) || []
   } catch { return [] }
 }
 
-export async function getRequestClient(carId: string): Promise<RequestClient | null> {
+export async function getClientById(id: string): Promise<Client | null> {
   try {
-    const { data, error } = await getClient().from('request_clients').select('*').eq('car_id', carId).maybeSingle()
+    const { data, error } = await getClient().from('clients').select('*').eq('id', id).maybeSingle()
     if (error) return null
-    return data as RequestClient | null
+    return data as Client | null
   } catch { return null }
 }
 
-export async function upsertRequestClient(payload: Partial<RequestClient>): Promise<RequestClient> {
-  const { data, error } = await getClient().from('request_clients').upsert(payload, { onConflict: 'car_id' }).select().single()
-  if (error) handleError('upsertRequestClient failed', error)
-  return data as RequestClient
+export async function upsertClient(name: string, phone: string = ''): Promise<Client> {
+  const { data: existing } = await getClient().from('clients').select('*').eq('name', name).eq('phone', phone).maybeSingle()
+  if (existing) return existing as Client
+  const { data, error } = await getClient().from('clients').insert({ name, phone }).select().single()
+  if (error) handleError('upsertClient failed', error)
+  return data as Client
 }
 
 // --- Customers ---
@@ -445,16 +447,16 @@ export async function getCustomerPayments(carId: string): Promise<CustomerPaymen
   } catch { return [] }
 }
 
-export async function getAllCustomerPayments(): Promise<(CustomerPayment & { car_name?: string; client_name?: string })[]> {
+export async function getAllCustomerPayments(): Promise<(CustomerPayment & { car_name?: string })[]> {
   try {
     const { data, error } = await getClient()
       .from('customer_payments')
-      .select('*, car:cars!customer_payments_car_id_fkey(name), client:request_clients!customer_payments_car_id_fkey(name)')
+      .select('*, car:cars!customer_payments_car_id_fkey(name)')
       .order('created_at', { ascending: false })
     if (error) return []
     return ((data as any[]) || []).map(p => {
-      const { car, client, ...rest } = p
-      return { ...rest, car_name: car?.name, client_name: client?.name }
+      const { car, ...rest } = p
+      return { ...rest, car_name: car?.name }
     })
   } catch { return [] }
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { createCar, getCar, updateCar, getRequestClient as getRC, upsertRequestClient, getAllRequestClients, getLastCarCode, generateNextCode } from '../db/cloud'
+import { createCar, getCar, updateCar, getClientById, getAllClients, upsertClient, getLastCarCode, generateNextCode } from '../db/cloud'
 import { MODEL_YEARS, STAGE_ORDER, STAGE_LABELS } from '../types'
 
 export default function CarForm() {
@@ -31,7 +31,7 @@ export default function CarForm() {
   const [phoneSugs, setPhoneSugs] = useState<{name: string; phone: string}[]>([])
 
   useEffect(() => {
-    getAllRequestClients().then(data => {
+    getAllClients().then(data => {
       allClientsRef.current = data.map(r => ({ name: r.name, phone: r.phone }))
     }).catch(() => {})
   }, [])
@@ -49,10 +49,12 @@ export default function CarForm() {
       setNotes(car.notes || '')
       setCurrentStage(car.current_stage)
       setCode(car.code || '')
+      if (car.client_id) {
+        getClientById(car.client_id).then(cl => {
+          if (cl) { setClientName(cl.name); setClientPhone(cl.phone) }
+        }).catch(() => {})
+      }
     }).catch(() => setError(t('car.load_error')))
-    getRC(id).then(rc => {
-      if (rc) { setClientName(rc.name); setClientPhone(rc.phone) }
-    }).catch(() => {})
   }, [id])
 
   useEffect(() => {
@@ -107,15 +109,16 @@ export default function CarForm() {
         if (user.role === 'admin') payload.current_stage = currentStage
         await updateCar(id, payload)
         if (clientName) {
-          const existing = await getRC(id)
-          await upsertRequestClient({ id: existing?.id, car_id: id, name: clientName, phone: clientPhone })
+          const cl = await upsertClient(clientName, clientPhone)
+          await updateCar(id, { client_id: cl.id })
         }
       } else {
         const car = await createCar({
           name, model_year: modelYear, code, notes, created_by: user.id, updated_by: user.id,
         })
         if (clientName) {
-          await upsertRequestClient({ car_id: car.id, name: clientName, phone: clientPhone })
+          const cl = await upsertClient(clientName, clientPhone)
+          await updateCar(car.id, { client_id: cl.id })
         }
         navigate(`/cars/${car.id}`)
         return
