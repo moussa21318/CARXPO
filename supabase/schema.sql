@@ -37,6 +37,19 @@ CREATE TABLE clients (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS clients_name_phone_idx ON clients (name, phone);
 
+-- Final customers (shipping prep)
+CREATE TABLE customers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  code VARCHAR(3) UNIQUE,
+  full_name_latin TEXT NOT NULL,
+  national_id TEXT NOT NULL,
+  address_latin TEXT NOT NULL,
+  postal_code TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Cars table
 CREATE TABLE cars (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -84,19 +97,6 @@ CREATE TABLE car_stage_logs (
   evidence_url TEXT,
   notes TEXT DEFAULT '',
   moved_by UUID REFERENCES users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Final customers (shipping prep)
-CREATE TABLE customers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  code VARCHAR(3) UNIQUE,
-  full_name_latin TEXT NOT NULL,
-  national_id TEXT NOT NULL,
-  address_latin TEXT NOT NULL,
-  postal_code TEXT NOT NULL,
-  phone TEXT NOT NULL,
-  email TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
