@@ -186,31 +186,31 @@ export default function PaymentsPage() {
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.total_paid')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.debt')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.notes_column')}</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.details')}</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.details')}</th>
               </tr>
             </thead>
             <tbody>
               {accounts.map(acc => (
                 <tr key={acc.car?.id || 'general'} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="p-3">
+                  <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">
                     {acc.requestClient ? (
-                      <div className="text-sm font-medium">{acc.requestClient.name}</div>
+                      <span className="font-medium">{acc.requestClient.name}</span>
                     ) : (
-                      <div className="text-sm text-gray-400">{t('payments.no_client')}</div>
+                      <span className="text-gray-400">{t('payments.no_client')}</span>
                     )}
                   </td>
-                  <td className="p-3 text-sm text-gray-600 dark:text-gray-300">{acc.car ? `${acc.car.name} (${acc.car.model_year})` : '—'}</td>
-                  <td className="p-3 text-sm">{acc.car ? formatPrice(acc.totalFees) : '—'}</td>
-                  <td className="p-3 text-sm text-green-600 dark:text-green-400">{formatPrice(acc.totalPaid)}</td>
-                  <td className="p-3 text-sm">
+                  <td className="p-3 text-right text-sm text-gray-600 dark:text-gray-300">{acc.car ? `${acc.car.name} (${acc.car.model_year})` : '—'}</td>
+                  <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">{acc.car ? formatPrice(acc.totalFees) : '—'}</td>
+                  <td className="p-3 text-right text-sm text-green-600 dark:text-green-400">{formatPrice(acc.totalPaid)}</td>
+                  <td className="p-3 text-right text-sm">
                     <span className={`font-semibold ${acc.debt > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                       {acc.debt > 0 ? formatPrice(acc.debt) : acc.debt < 0 ? `-${formatPrice(Math.abs(acc.debt))}` : '₩0'}
                     </span>
                   </td>
-                  <td className="p-3 text-xs text-gray-500 dark:text-gray-400 max-w-[150px] truncate">{acc.notes || '—'}</td>
-                  <td className="p-3">
+                  <td className="p-3 text-right text-sm text-gray-500 dark:text-gray-400 max-w-[150px] truncate">{acc.notes || '—'}</td>
+                  <td className="p-3 text-right text-sm">
                     <button onClick={() => openDetail(acc)}
-                      className="text-blue-600 dark:text-blue-400 hover:underline text-sm">{t('app.details')}</button>
+                      className="text-blue-600 dark:text-blue-400 hover:underline">{t('app.details')}</button>
                   </td>
                 </tr>
               ))}
