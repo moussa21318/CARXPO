@@ -32,7 +32,7 @@ interface ClientDetail {
 }
 
 export default function PaymentsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user, canEdit } = useAuth()
   const [transactions, setTransactions] = useState<TransactionRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -251,21 +251,51 @@ export default function PaymentsPage() {
   const rowsWithBalance = useMemo(() => {
     let balance = 0
     return filteredTransactions.map(r => {
-      balance = balance + r.debit - r.credit
+      balance = balance - r.debit + r.credit
       return { ...r, avoir: balance }
     })
   }, [filteredTransactions])
 
+  const isRtl = i18n.language === 'ar'
+
+  const colDefs = [
+    { key: 'date', label: t('payments.date') },
+    { key: 'designation', label: t('payments.designation') },
+    { key: 'client', label: t('car.request_client') },
+    { key: 'debit', label: t('payments.debit') },
+    { key: 'credit', label: t('payments.credit') },
+    { key: 'avoir', label: t('payments.avoir') },
+  ]
+  const displayCols = isRtl ? [...colDefs].reverse() : colDefs
+
+  const detailCols = isRtl
+    ? [
+        { key: 'avoir', label: t('payments.avoir') },
+        { key: 'credit', label: t('payments.credit') },
+        { key: 'debit', label: t('payments.debit') },
+        { key: 'designation', label: t('payments.designation') },
+        { key: 'date', label: t('payments.date') },
+      ]
+    : [
+        { key: 'date', label: t('payments.date') },
+        { key: 'designation', label: t('payments.designation') },
+        { key: 'debit', label: t('payments.debit') },
+        { key: 'credit', label: t('payments.credit') },
+        { key: 'avoir', label: t('payments.avoir') },
+      ]
+
   const handleExportExcel = () => {
-    const data = rowsWithBalance.map(r => ({
-      [t('payments.date')]: r.date,
-      [t('car.request_client')]: r.clientName,
-      [t('payments.designation')]: r.designation,
-      [t('payments.debit')]: r.debit || '',
-      [t('payments.credit')]: r.credit || '',
-      [t('payments.avoir')]: r.avoir,
+    const header = displayCols.map(c => c.label)
+    const data = rowsWithBalance.map(r => displayCols.map(c => {
+      if (c.key === 'date') return r.date
+      if (c.key === 'designation') return r.designation
+      if (c.key === 'client') return r.clientName
+      if (c.key === 'debit') return r.debit || ''
+      if (c.key === 'credit') return r.credit || ''
+      if (c.key === 'avoir') return r.avoir
+      return ''
     }))
-    const ws = XLSX.utils.json_to_sheet(data)
+    const ws = XLSX.utils.aoa_to_sheet([header, ...data])
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Statement')
     XLSX.writeFile(wb, `statement-${new Date().toISOString().slice(0, 10)}.xlsx`)
@@ -274,20 +304,25 @@ export default function PaymentsPage() {
   const handleExportPdf = () => {
     const rowsHtml = rowsWithBalance.map(r => `
       <tr>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.date}</td>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.clientName}</td>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.designation}</td>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.debit ? formatPrice(r.debit) : ''}</td>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.credit ? formatPrice(r.credit) : ''}</td>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${formatPrice(r.avoir)}</td>
+        ${displayCols.map(c => {
+          let val = ''
+          if (c.key === 'date') val = r.date
+          else if (c.key === 'designation') val = r.designation
+          else if (c.key === 'client') val = r.clientName
+          else if (c.key === 'debit') val = r.debit ? formatPrice(r.debit) : ''
+          else if (c.key === 'credit') val = r.credit ? formatPrice(r.credit) : ''
+          else if (c.key === 'avoir') val = formatPrice(r.avoir)
+          return `<td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${val}</td>`
+        }).join('')}
       </tr>
     `).join('')
     const printWin = window.open('', '_blank')
     if (!printWin) return
+    const pdfDir = isRtl ? 'rtl' : 'ltr'
     printWin.document.write(`
-      <!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>${t('payments.title')}</title>
+      <!DOCTYPE html><html dir="${pdfDir}"><head><meta charset="utf-8"><title>${t('payments.title')}</title>
       <style>
-        body{font-family:system-ui,sans-serif;padding:30px;direction:rtl}
+        body{font-family:system-ui,sans-serif;padding:30px;direction:${pdfDir}}
         h2{margin-bottom:20px}
         table{width:100%;border-collapse:collapse}
         th{background:#eee;padding:8px;border:1px solid #ddd;text-align:center;font-size:13px}
@@ -296,9 +331,9 @@ export default function PaymentsPage() {
       <h2>${t('payments.title')}</h2>
       <table>
         <thead><tr>
-          <th>${t('payments.date')}</th><th>${t('car.request_client')}</th><th>${t('payments.designation')}</th><th>${t('payments.debit')}</th><th>${t('payments.credit')}</th><th>${t('payments.avoir')}</th>
+          ${displayCols.map(c => `<th>${c.label}</th>`).join('')}
         </tr></thead>
-        <tbody>${rowsHtml || `<tr><td colspan="6" style="text-align:center;color:#999;padding:20px">${t('app.no_data')}</td></tr>`}</tbody>
+        <tbody>${rowsHtml || `<tr><td colspan="${displayCols.length}" style="text-align:center;color:#999;padding:20px">${t('app.no_data')}</td></tr>`}</tbody>
       </table>
       <script>window.onload=function(){setTimeout(function(){window.print();window.close()},500)}<\/script>
     </body></html>`)
@@ -310,17 +345,19 @@ export default function PaymentsPage() {
     if (exportDateFrom) rows = rows.filter(r => r.date >= exportDateFrom)
     if (exportDateTo) rows = rows.filter(r => r.date <= exportDateTo)
     let balance = 0
+    const header = detailCols.map(c => c.label)
     const data = rows.map(r => {
-      balance = balance + r.debit - r.credit
-      return {
-        [t('payments.date')]: r.date,
-        [t('payments.designation')]: r.designation,
-        [t('payments.debit')]: r.debit || '',
-        [t('payments.credit')]: r.credit || '',
-        [t('payments.avoir')]: balance,
-      }
+      balance = balance - r.debit + r.credit
+      return detailCols.map(c => {
+        if (c.key === 'date') return r.date
+        if (c.key === 'designation') return r.designation
+        if (c.key === 'debit') return r.debit || ''
+        if (c.key === 'credit') return r.credit || ''
+        if (c.key === 'avoir') return balance
+        return ''
+      })
     })
-    const ws = XLSX.utils.json_to_sheet(data)
+    const ws = XLSX.utils.aoa_to_sheet([header, ...data])
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Client')
     XLSX.writeFile(wb, `client-${client.clientName || 'general'}-${new Date().toISOString().slice(0, 10)}.xlsx`)
@@ -332,21 +369,26 @@ export default function PaymentsPage() {
     if (exportDateTo) rows = rows.filter(r => r.date <= exportDateTo)
     let balance = 0
     const rowsHtml = rows.map(r => {
-      balance = balance + r.debit - r.credit
+      balance = balance - r.debit + r.credit
       return `<tr>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.date}</td>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.designation}</td>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.debit ? formatPrice(r.debit) : ''}</td>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.credit ? formatPrice(r.credit) : ''}</td>
-        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${formatPrice(balance)}</td>
+        ${detailCols.map(c => {
+          let val = ''
+          if (c.key === 'date') val = r.date
+          else if (c.key === 'designation') val = r.designation
+          else if (c.key === 'debit') val = r.debit ? formatPrice(r.debit) : ''
+          else if (c.key === 'credit') val = r.credit ? formatPrice(r.credit) : ''
+          else if (c.key === 'avoir') val = formatPrice(balance)
+          return `<td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${val}</td>`
+        }).join('')}
       </tr>`
     }).join('')
     const printWin = window.open('', '_blank')
     if (!printWin) return
+    const pdfDir = isRtl ? 'rtl' : 'ltr'
     printWin.document.write(`
-      <!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>${client.clientName}</title>
+      <!DOCTYPE html><html dir="${pdfDir}"><head><meta charset="utf-8"><title>${client.clientName}</title>
       <style>
-        body{font-family:system-ui,sans-serif;padding:30px;direction:rtl}
+        body{font-family:system-ui,sans-serif;padding:30px;direction:${pdfDir}}
         h2{margin:0;font-size:20px}
         .sub{color:#666;margin:4px 0 20px;font-size:14px}
         table{width:100%;border-collapse:collapse}
@@ -356,9 +398,9 @@ export default function PaymentsPage() {
       <h2>${client.clientName}</h2>
       <table>
         <thead><tr>
-          <th>${t('payments.date')}</th><th>${t('payments.designation')}</th><th>${t('payments.debit')}</th><th>${t('payments.credit')}</th><th>${t('payments.avoir')}</th>
+          ${detailCols.map(c => `<th>${c.label}</th>`).join('')}
         </tr></thead>
-        <tbody>${rowsHtml || `<tr><td colspan="5" style="text-align:center;color:#999;padding:20px">${t('app.no_data')}</td></tr>`}</tbody>
+        <tbody>${rowsHtml || `<tr><td colspan="${detailCols.length}" style="text-align:center;color:#999;padding:20px">${t('app.no_data')}</td></tr>`}</tbody>
       </table>
       <script>window.onload=function(){setTimeout(function(){window.print();window.close()},500)}<\/script>
     </body></html>`)
@@ -415,31 +457,28 @@ export default function PaymentsPage() {
         <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('app.no_data')}</div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full min-w-[800px]" dir={isRtl ? 'rtl' : 'ltr'}>
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.date')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.request_client')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.designation')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.debit')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.credit')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.avoir')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.details')}</th>
+                {displayCols.map(c => (
+                  <th key={c.key} className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{c.label}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {rowsWithBalance.map(r => (
-                <tr key={r.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="p-3 text-right text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{r.date}</td>
-                  <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">{r.clientName || '—'}</td>
-                  <td className="p-3 text-right text-sm text-gray-600 dark:text-gray-300">{r.designation}</td>
-                  <td className="p-3 text-right text-sm text-red-600 dark:text-red-400">{r.debit ? formatPrice(r.debit) : ''}</td>
-                  <td className="p-3 text-right text-sm text-green-600 dark:text-green-400">{r.credit ? formatPrice(r.credit) : ''}</td>
-                  <td className="p-3 text-right text-sm font-semibold text-gray-800 dark:text-gray-200">{formatPrice(r.avoir)}</td>
-                  <td className="p-3 text-right text-sm">
-                    <button onClick={() => openDetail(r)}
-                      className="text-blue-600 dark:text-blue-400 hover:underline">{t('app.details')}</button>
-                  </td>
+                <tr key={r.id} onClick={() => openDetail(r)}
+                  className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                  {displayCols.map(c => {
+                    let val: React.ReactNode = ''
+                    if (c.key === 'date') val = r.date
+                    else if (c.key === 'designation') val = r.designation
+                    else if (c.key === 'client') val = r.clientName || '—'
+                    else if (c.key === 'debit') val = <span className="text-red-600 dark:text-red-400">{r.debit ? formatPrice(r.debit) : ''}</span>
+                    else if (c.key === 'credit') val = <span className="text-green-600 dark:text-green-400">{r.credit ? formatPrice(r.credit) : ''}</span>
+                    else if (c.key === 'avoir') val = <span className="font-semibold text-gray-800 dark:text-gray-200">{formatPrice(r.avoir)}</span>
+                    return <td key={c.key} className="p-3 text-right text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{val}</td>
+                  })}
                 </tr>
               ))}
             </tbody>
@@ -542,14 +581,12 @@ export default function PaymentsPage() {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px]">
+              <table className="w-full min-w-[500px]" dir={isRtl ? 'rtl' : 'ltr'}>
                 <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
                   <tr>
-                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.date')}</th>
-                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.designation')}</th>
-                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.debit')}</th>
-                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.credit')}</th>
-                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.avoir')}</th>
+                    {detailCols.map(c => (
+                      <th key={c.key} className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{c.label}</th>
+                    ))}
                     {user?.role === 'admin' && <th className="text-center p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.edit')}</th>}
                   </tr>
                 </thead>
@@ -560,14 +597,18 @@ export default function PaymentsPage() {
                     if (exportDateFrom) rows = rows.filter(r => r.date >= exportDateFrom)
                     if (exportDateTo) rows = rows.filter(r => r.date <= exportDateTo)
                     return rows.map(r => {
-                      balance = balance + r.debit - r.credit
+                      balance = balance - r.debit + r.credit
                       return (
                         <tr key={r.id} className="border-b dark:border-gray-700">
-                          <td className="p-2 text-right text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{r.date}</td>
-                          <td className="p-2 text-right text-sm text-gray-700 dark:text-gray-300">{r.designation}</td>
-                          <td className="p-2 text-right text-sm text-red-600 dark:text-red-400">{r.debit ? formatPrice(r.debit) : ''}</td>
-                          <td className="p-2 text-right text-sm text-green-600 dark:text-green-400">{r.credit ? formatPrice(r.credit) : ''}</td>
-                          <td className="p-2 text-right text-sm font-semibold">{formatPrice(balance)}</td>
+                          {detailCols.map(c => {
+                            let val: React.ReactNode = ''
+                            if (c.key === 'date') val = <span className="whitespace-nowrap">{r.date}</span>
+                            else if (c.key === 'designation') val = r.designation
+                            else if (c.key === 'debit') val = <span className="text-red-600 dark:text-red-400">{r.debit ? formatPrice(r.debit) : ''}</span>
+                            else if (c.key === 'credit') val = <span className="text-green-600 dark:text-green-400">{r.credit ? formatPrice(r.credit) : ''}</span>
+                            else if (c.key === 'avoir') val = <span className="font-semibold">{formatPrice(balance)}</span>
+                            return <td key={c.key} className="p-2 text-right text-sm text-gray-600 dark:text-gray-300">{val}</td>
+                          })}
                           {user?.role === 'admin' && (
                             <td className="p-2 text-center text-sm whitespace-nowrap">
                               {r.sourcePayment && (
