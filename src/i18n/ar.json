@@ -227,7 +227,11 @@
     "filter_settled": "مسدد",
     "filter_general": "تسوية عامة",
     "filter_from_date": "من تاريخ",
-    "filter_to_date": "إلى تاريخ"
+    "filter_to_date": "إلى تاريخ",
+    "export_excel": "تصدير Excel",
+    "export_pdf": "تصدير PDF",
+    "export_from": "من تاريخ",
+    "export_to": "إلى تاريخ"
   },
   "payment_method": {
     "cash": "نقداً",

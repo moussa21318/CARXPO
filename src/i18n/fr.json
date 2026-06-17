@@ -227,7 +227,11 @@
     "filter_settled": "Soldé",
     "filter_general": "Général",
     "filter_from_date": "Du",
-    "filter_to_date": "Au"
+    "filter_to_date": "Au",
+    "export_excel": "Exporter Excel",
+    "export_pdf": "Exporter PDF",
+    "export_from": "Du",
+    "export_to": "Au"
   },
   "payment_method": {
     "cash": "Espèces",

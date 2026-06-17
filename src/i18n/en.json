@@ -227,7 +227,11 @@
     "filter_settled": "Settled",
     "filter_general": "General",
     "filter_from_date": "From date",
-    "filter_to_date": "To date"
+    "filter_to_date": "To date",
+    "export_excel": "Export Excel",
+    "export_pdf": "Export PDF",
+    "export_from": "From date",
+    "export_to": "To date"
   },
   "payment_method": {
     "cash": "Cash",

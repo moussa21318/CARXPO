@@ -5,6 +5,7 @@ import { getCars, getAllRequestClients, getAllCarFees, getCustomerPayments, getG
 import { PAYMENT_METHOD_LABELS, type Car, type CarFees, type RequestClient, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 import { uploadFile } from '../utils/upload'
+import * as XLSX from 'xlsx'
 
 interface CustomerAccount {
   requestClient: RequestClient | null
@@ -46,6 +47,9 @@ export default function PaymentsPage() {
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
 
+  const [exportDateFrom, setExportDateFrom] = useState('')
+  const [exportDateTo, setExportDateTo] = useState('')
+
   const filteredAccounts = useMemo(() => {
     return accounts.filter(acc => {
       if (filterClient && acc.requestClient?.name) {
@@ -59,8 +63,9 @@ export default function PaymentsPage() {
       if (filterStatus === 'general' && acc.car) return false
       if (filterDateFrom || filterDateTo) {
         const hasPaymentInRange = acc.payments.some(p => {
-          if (filterDateFrom && p.payment_date < filterDateFrom) return false
-          if (filterDateTo && p.payment_date > filterDateTo) return false
+          const pd = new Date(p.payment_date).getTime()
+          if (filterDateFrom && pd < new Date(filterDateFrom).getTime()) return false
+          if (filterDateTo && pd > new Date(filterDateTo).getTime()) return false
           return true
         })
         if (!hasPaymentInRange) return false
@@ -187,6 +192,81 @@ export default function PaymentsPage() {
         setDetailAccount({ ...detailAccount, payments: detailAccount.payments.filter(p => p.id !== payment.id) })
       }
     }
+  }
+
+  const handleExportExcel = (acc: CustomerAccount) => {
+    let payments = acc.payments
+    if (exportDateFrom) payments = payments.filter(p => new Date(p.payment_date) >= new Date(exportDateFrom))
+    if (exportDateTo) payments = payments.filter(p => new Date(p.payment_date) <= new Date(exportDateTo))
+    const data = payments.map(p => ({
+      [t('payments.date')]: p.payment_date,
+      [t('payments.amount')]: p.amount,
+      [t('payments.method')]: t(PAYMENT_METHOD_LABELS[p.payment_method]),
+      [t('payments.notes')]: p.notes || '',
+    }))
+    const clientName = acc.requestClient?.name || t('payments.general_settlement')
+    const carName = acc.car ? `${acc.car.name} (${acc.car.model_year})` : ''
+    const summaryRows = [
+      { [t('payments.date')]: '', [t('payments.amount')]: '', [t('payments.method')]: '', [t('payments.notes')]: '' },
+      { [t('payments.date')]: clientName, [t('payments.amount')]: `${t('car.total_fees')}: ${acc.car ? formatPrice(acc.totalFees) : '—'}`, [t('payments.method')]: '', [t('payments.notes')]: '' },
+      { [t('payments.date')]: carName, [t('payments.amount')]: `${t('payments.total_paid')}: ${formatPrice(acc.totalPaid)}`, [t('payments.method')]: '', [t('payments.notes')]: '' },
+      { [t('payments.date')]: '', [t('payments.amount')]: `${t('payments.debt')}: ${formatPrice(acc.debt)}`, [t('payments.method')]: '', [t('payments.notes')]: '' },
+    ]
+    const ws = XLSX.utils.json_to_sheet([...data, ...summaryRows])
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Payments')
+    XLSX.writeFile(wb, `payments-${acc.requestClient?.name || 'general'}-${new Date().toISOString().slice(0, 10)}.xlsx`)
+  }
+
+  const handleExportPdf = (acc: CustomerAccount) => {
+    let payments = acc.payments
+    if (exportDateFrom) payments = payments.filter(p => new Date(p.payment_date) >= new Date(exportDateFrom))
+    if (exportDateTo) payments = payments.filter(p => new Date(p.payment_date) <= new Date(exportDateTo))
+    const clientName = acc.requestClient?.name || t('payments.general_settlement')
+    const carName = acc.car ? `${acc.car.name} (${acc.car.model_year})` : ''
+    const paymentRows = payments.map(p => `
+      <tr>
+        <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${p.payment_date}</td>
+        <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${formatPrice(p.amount)}</td>
+        <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${t(PAYMENT_METHOD_LABELS[p.payment_method])}</td>
+        <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${p.notes || ''}</td>
+      </tr>
+    `).join('')
+    const printWin = window.open('', '_blank')
+    if (!printWin) return
+    printWin.document.write(`
+      <!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>${clientName}</title>
+      <style>
+        body{font-family:system-ui,sans-serif;padding:30px;direction:rtl}
+        h2{margin:0;font-size:20px}
+        .sub{color:#666;margin:4px 0 20px;font-size:14px}
+        .summary{display:flex;gap:30px;margin-bottom:24px}
+        .summary div{background:#f5f5f5;padding:12px 20px;border-radius:8px;text-align:center}
+        .summary div .label{font-size:12px;color:#666}
+        .summary div .value{font-size:18px;font-weight:700}
+        table{width:100%;border-collapse:collapse}
+        th{background:#eee;padding:8px 10px;border:1px solid #ddd;text-align:center;font-size:14px}
+        td{font-size:13px}
+        @media print{body{padding:20px}}
+      </style></head><body>
+      <h2>${clientName}</h2>
+      <div class="sub">${carName}</div>
+      <div class="summary">
+        <div><div class="label">${t('car.total_fees')}</div><div class="value">${acc.car ? formatPrice(acc.totalFees) : '—'}</div></div>
+        <div><div class="label">${t('payments.total_paid')}</div><div class="value">${formatPrice(acc.totalPaid)}</div></div>
+        <div><div class="label">${t('payments.debt')}</div><div class="value">${formatPrice(acc.debt)}</div></div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>${t('payments.date')}</th><th>${t('payments.amount')}</th><th>${t('payments.method')}</th><th>${t('payments.notes')}</th>
+        </tr></thead>
+        <tbody>${paymentRows || `<tr><td colspan="4" style="text-align:center;color:#999;padding:20px">${t('app.no_data')}</td></tr>`}</tbody>
+      </table>
+      <script>
+        window.onload = function() { setTimeout(function() { window.print(); window.close() }, 500) }
+      <\/script>
+    </body></html>`)
+    printWin.document.close()
   }
 
   if (loading) return <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('app.loading')}</div>
@@ -390,6 +470,25 @@ export default function PaymentsPage() {
                   </div>
                 ))
               )}
+            </div>
+            <div className="border-t dark:border-gray-700 pt-4">
+              <h3 className="text-sm font-medium mb-2">{t('export.title')}</h3>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <input type="date" value={exportDateFrom} onChange={e => setExportDateFrom(e.target.value)}
+                  title={t('payments.export_from')}
+                  className="flex-1 min-w-[120px] p-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <input type="date" value={exportDateTo} onChange={e => setExportDateTo(e.target.value)}
+                  title={t('payments.export_to')}
+                  className="flex-1 min-w-[120px] p-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <button onClick={() => handleExportExcel(detailAccount)}
+                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                  {t('payments.export_excel')}
+                </button>
+                <button onClick={() => handleExportPdf(detailAccount)}
+                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
+                  {t('payments.export_pdf')}
+                </button>
+              </div>
             </div>
             <button onClick={() => setDetailOpen(false)}
               className="w-full p-3 bg-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 dark:bg-gray-600 text-sm transition-colors">
