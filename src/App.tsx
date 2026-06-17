@@ -13,6 +13,7 @@ import ExportPage from './pages/ExportPage'
 import ImportPage from './pages/ImportPage'
 import PaymentsPage from './pages/PaymentsPage'
 import ClientsPage from './pages/ClientsPage'
+import CustomersPage from './pages/CustomersPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="/import" element={<ImportPage />} />
         <Route path="/payments" element={<PaymentsPage />} />
         <Route path="/clients" element={<ClientsPage />} />
+        <Route path="/customers" element={<CustomersPage />} />
       </Route>
     </Routes>
   )

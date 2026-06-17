@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import {
   getCar, updateCar, deleteCar, getCarFees, upsertCarFees,
   getStageLogs, moveToStage,
-  getClientById, getCustomer, upsertCustomer,
+  getClientById, getCustomerById, upsertCustomer,
   getAttachments, addAttachment, deleteAttachment,
   getDeleteRequests, createDeleteRequest, reviewDeleteRequest,
   getCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment,
@@ -57,14 +57,14 @@ export default function CarDetails() {
 
   const loadData = useCallback(async () => {
     if (!id) return
-    const [c, f, sl, cust, att, dr, p] = await Promise.all([
-      getCar(id), getCarFees(id), getStageLogs(id), getCustomer(id), getAttachments(id), getDeleteRequests(id), getCustomerPayments(id),
+    const [c, f, sl, att, dr, p] = await Promise.all([
+      getCar(id), getCarFees(id), getStageLogs(id), getAttachments(id), getDeleteRequests(id), getCustomerPayments(id),
     ])
     setCar(c)
     setFees(f)
     setStageLogs(sl)
     setRequestClient(c?.client_id ? await getClientById(c.client_id) : null)
-    setCustomerData(cust || {})
+    setCustomerData(c?.customer_id ? await getCustomerById(c.customer_id) || {} : {})
     setAttachments(att)
     setDeleteRequests(dr)
     setPayments(p)
@@ -122,7 +122,17 @@ export default function CarDetails() {
 
   const handleSaveCustomer = async () => {
     if (!id || !user) return
-    await upsertCustomer({ car_id: id, id: (customerData as any).id, ...customerData })
+    const cust = await upsertCustomer(
+      customerData.full_name_latin || '',
+      customerData.national_id || '',
+      customerData.address_latin || '',
+      customerData.postal_code || '',
+      customerData.phone || '',
+      customerData.email || ''
+    )
+    if (cust) {
+      await updateCar(id, { customer_id: cust.id })
+    }
     loadData()
   }
 

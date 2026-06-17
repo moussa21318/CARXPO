@@ -37,6 +37,7 @@ export interface Car {
   notes: string
   code: string | null
   client_id: string | null
+  customer_id: string | null
   current_stage: CarStage
   confirmed: boolean
   created_by: string
@@ -74,13 +75,14 @@ export interface CarStageLog {
 
 export interface Customer {
   id: string
-  car_id: string
+  code: string | null
   full_name_latin: string
   national_id: string
   address_latin: string
   postal_code: string
   phone: string
   email: string
+  created_at: string
 }
 
 export interface EditRequest {

@@ -49,6 +49,7 @@ CREATE TABLE cars (
   notes TEXT DEFAULT '',
   code VARCHAR(3) UNIQUE,
   client_id UUID REFERENCES clients(id),
+  customer_id UUID REFERENCES customers(id),
   current_stage TEXT NOT NULL DEFAULT 'request' CHECK (current_stage IN ('request','deposit','purchase','shipping_prep','shipping')),
   confirmed BOOLEAN DEFAULT false,
   created_by UUID REFERENCES users(id),
@@ -89,13 +90,14 @@ CREATE TABLE car_stage_logs (
 -- Final customers (shipping prep)
 CREATE TABLE customers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  car_id UUID UNIQUE REFERENCES cars(id) ON DELETE CASCADE,
+  code VARCHAR(3) UNIQUE,
   full_name_latin TEXT NOT NULL,
   national_id TEXT NOT NULL,
   address_latin TEXT NOT NULL,
   postal_code TEXT NOT NULL,
   phone TEXT NOT NULL,
-  email TEXT DEFAULT ''
+  email TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Edit requests
@@ -196,6 +198,7 @@ CREATE TABLE notifications (
 
 CREATE INDEX IF NOT EXISTS idx_cars_created_at ON cars(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_cars_client_id ON cars(client_id);
+CREATE INDEX IF NOT EXISTS idx_cars_customer_id ON cars(customer_id);
 CREATE INDEX IF NOT EXISTS idx_car_stage_logs_car_id ON car_stage_logs(car_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);

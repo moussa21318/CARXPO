@@ -275,26 +275,52 @@ export async function deleteClient(id: string): Promise<void> {
 }
 
 // --- Customers ---
-export async function getCustomers(): Promise<Customer[]> {
+export async function getLastCustomerCode(): Promise<string | null> {
   try {
-    const { data, error } = await getClient().from('customers').select('*').order('created_at', { ascending: false })
+    const { data } = await getClient().from('customers').select('code').not('code', 'is', null).order('code', { ascending: false }).limit(1).maybeSingle()
+    return data?.code || null
+  } catch { return null }
+}
+
+export async function getAllCustomers(): Promise<Customer[]> {
+  try {
+    const { data, error } = await getClient().from('customers').select('*').order('code', { ascending: true })
     if (error) return []
     return (data as Customer[]) || []
   } catch { return [] }
 }
 
-export async function getCustomer(carId: string): Promise<Customer | null> {
+export async function getCustomerById(id: string): Promise<Customer | null> {
   try {
-    const { data, error } = await getClient().from('customers').select('*').eq('car_id', carId).maybeSingle()
+    const { data, error } = await getClient().from('customers').select('*').eq('id', id).maybeSingle()
     if (error) return null
     return data as Customer | null
   } catch { return null }
 }
 
-export async function upsertCustomer(payload: Partial<Customer>): Promise<Customer> {
-  const { data, error } = await getClient().from('customers').upsert(payload, { onConflict: 'car_id' }).select().single()
-  if (error) handleError('upsertCustomer failed', error)
+export async function upsertCustomer(fullNameLatin: string, nationalId: string, addressLatin: string, postalCode: string, phone: string, email: string = ''): Promise<Customer> {
+  const { data: existing } = await getClient().from('customers').select('*').eq('full_name_latin', fullNameLatin).eq('national_id', nationalId).maybeSingle()
+  if (existing) {
+    const { data, error } = await getClient().from('customers').update({ address_latin: addressLatin, postal_code: postalCode, phone, email }).eq('id', existing.id).select().single()
+    if (error) handleError('upsertCustomer update failed', error)
+    return data as Customer
+  }
+  const lastCode = await getLastCustomerCode()
+  const code = generateNextClientCode(lastCode)
+  const { data, error } = await getClient().from('customers').insert({ full_name_latin: fullNameLatin, national_id: nationalId, address_latin: addressLatin, postal_code: postalCode, phone, email, code }).select().single()
+  if (error) handleError('upsertCustomer insert failed', error)
   return data as Customer
+}
+
+export async function updateCustomer(id: string, payload: Partial<Customer>): Promise<Customer> {
+  const { data, error } = await getClient().from('customers').update(payload).eq('id', id).select().single()
+  if (error) handleError('updateCustomer failed', error)
+  return data as Customer
+}
+
+export async function deleteCustomer(id: string): Promise<void> {
+  const { error } = await getClient().from('customers').delete().eq('id', id)
+  if (error) handleError('deleteCustomer failed', error)
 }
 
 // --- Edit Requests ---

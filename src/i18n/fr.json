@@ -28,7 +28,8 @@
     "view_table": "Tableau",
     "view_cards": "Cartes",
     "payments": "Relevé comptes",
-    "clients": "Clients"
+    "clients": "Clients",
+    "customers": "Clients finaux"
   },
   "auth": {
     "login": "Connexion",
@@ -258,5 +259,22 @@
     "search": "Rechercher par nom, téléphone ou code",
     "cars_count": "Nombre de voitures",
     "no_data": "Aucun client trouvé"
+  },
+  "customers": {
+    "title": "Gérer les clients finaux",
+    "add": "Ajouter un client final",
+    "edit": "Modifier le client final",
+    "delete_confirm": "Êtes-vous sûr de vouloir supprimer ce client final ?",
+    "code": "Code",
+    "name": "Nom complet (latin)",
+    "national_id": "N° d'identité",
+    "address": "Adresse",
+    "postal_code": "Code postal",
+    "phone": "Téléphone",
+    "email": "Email",
+    "created_at": "Date d'ajout",
+    "search": "Rechercher par nom, ID, téléphone ou code",
+    "cars_count": "Nombre de voitures",
+    "no_data": "Aucun client final trouvé"
   }
 }
