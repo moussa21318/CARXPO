@@ -20,6 +20,7 @@ export interface User {
 
 export interface Client {
   id: string
+  code: string | null
   name: string
   phone: string
   created_at: string

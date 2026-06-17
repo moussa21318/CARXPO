@@ -27,7 +27,8 @@
     "logout": "Logout",
     "view_table": "Table",
     "view_cards": "Cards",
-    "payments": "Payments"
+    "payments": "Payments",
+    "clients": "Clients"
   },
   "auth": {
     "login": "Login",
@@ -244,5 +245,18 @@
     "bank_transfer": "Bank Transfer",
     "check": "Check",
     "credit_card": "Credit Card"
+  },
+  "clients": {
+    "title": "Manage Clients",
+    "add": "Add Client",
+    "edit": "Edit Client",
+    "delete_confirm": "Are you sure you want to delete this client?",
+    "code": "Code",
+    "name": "Name",
+    "phone": "Phone",
+    "created_at": "Created At",
+    "search": "Search by name, phone or code",
+    "cars_count": "Cars Count",
+    "no_data": "No clients found"
   }
 }

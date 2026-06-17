@@ -30,6 +30,7 @@ CREATE TABLE users (
 -- Clients
 CREATE TABLE clients (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  code VARCHAR(3) UNIQUE,
   name TEXT NOT NULL,
   phone TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()

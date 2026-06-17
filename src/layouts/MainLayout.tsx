@@ -27,6 +27,7 @@ export default function MainLayout() {
     { to: '/', label: 'nav.dashboard', icon: '📊' },
     { to: '/cars', label: 'nav.cars', icon: '🚗' },
     { to: '/payments', label: 'nav.payments', icon: '💰' },
+    { to: '/clients', label: 'nav.clients', icon: '👤' },
     { to: '/export', label: 'nav.export', icon: '📤' },
     { to: '/notifications', label: 'nav.notifications', icon: '🔔', badge: unread },
   ]

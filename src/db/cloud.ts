@@ -224,6 +224,19 @@ export async function moveToStage(carId: string, stage: CarStage, evidenceUrl: s
 }
 
 // --- Clients ---
+export async function getLastClientCode(): Promise<string | null> {
+  try {
+    const { data } = await getClient().from('clients').select('code').not('code', 'is', null).order('code', { ascending: false }).limit(1).maybeSingle()
+    return data?.code || null
+  } catch { return null }
+}
+
+export function generateNextClientCode(lastCode: string | null): string {
+  if (!lastCode) return '001'
+  const num = parseInt(lastCode, 10)
+  return String(Math.min(num + 1, 999)).padStart(3, '0')
+}
+
 export async function getAllClients(): Promise<Client[]> {
   try {
     const { data, error } = await getClient().from('clients').select('*').order('name', { ascending: true })
@@ -243,9 +256,22 @@ export async function getClientById(id: string): Promise<Client | null> {
 export async function upsertClient(name: string, phone: string = ''): Promise<Client> {
   const { data: existing } = await getClient().from('clients').select('*').eq('name', name).eq('phone', phone).maybeSingle()
   if (existing) return existing as Client
-  const { data, error } = await getClient().from('clients').insert({ name, phone }).select().single()
+  const lastCode = await getLastClientCode()
+  const code = generateNextClientCode(lastCode)
+  const { data, error } = await getClient().from('clients').insert({ name, phone, code }).select().single()
   if (error) handleError('upsertClient failed', error)
   return data as Client
+}
+
+export async function updateClient(id: string, payload: { name?: string; phone?: string }): Promise<Client> {
+  const { data, error } = await getClient().from('clients').update(payload).eq('id', id).select().single()
+  if (error) handleError('updateClient failed', error)
+  return data as Client
+}
+
+export async function deleteClient(id: string): Promise<void> {
+  const { error } = await getClient().from('clients').delete().eq('id', id)
+  if (error) handleError('deleteClient failed', error)
 }
 
 // --- Customers ---

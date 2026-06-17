@@ -27,7 +27,8 @@
     "logout": "Déconnexion",
     "view_table": "Tableau",
     "view_cards": "Cartes",
-    "payments": "Relevé comptes"
+    "payments": "Relevé comptes",
+    "clients": "Clients"
   },
   "auth": {
     "login": "Connexion",
@@ -244,5 +245,18 @@
     "bank_transfer": "Virement bancaire",
     "check": "Chèque",
     "credit_card": "Carte de crédit"
+  },
+  "clients": {
+    "title": "Gérer les clients",
+    "add": "Ajouter un client",
+    "edit": "Modifier le client",
+    "delete_confirm": "Êtes-vous sûr de vouloir supprimer ce client ?",
+    "code": "Code",
+    "name": "Nom",
+    "phone": "Téléphone",
+    "created_at": "Date d'ajout",
+    "search": "Rechercher par nom, téléphone ou code",
+    "cars_count": "Nombre de voitures",
+    "no_data": "Aucun client trouvé"
   }
 }
