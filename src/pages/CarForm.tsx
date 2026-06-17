@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { createCar, getCar, updateCar, getClientById, getAllClients, upsertClient, getLastCarCode, generateNextCode } from '../db/cloud'
-import { MODEL_YEARS, STAGE_ORDER, STAGE_LABELS } from '../types'
+import { MODEL_YEARS, STAGE_ORDER, STAGE_LABELS, type Client } from '../types'
 
 export default function CarForm() {
   const { t } = useTranslation()
@@ -19,6 +19,7 @@ export default function CarForm() {
   const [sellerPhone, setSellerPhone] = useState('')
   const [initialPrice, setInitialPrice] = useState(0)
   const [notes, setNotes] = useState('')
+  const [clientId, setClientId] = useState<string | null>(null)
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
   const [currentStage, setCurrentStage] = useState('request')
@@ -26,14 +27,12 @@ export default function CarForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const allClientsRef = useRef<{name: string; phone: string}[]>([])
-  const [nameSugs, setNameSugs] = useState<{name: string; phone: string}[]>([])
-  const [phoneSugs, setPhoneSugs] = useState<{name: string; phone: string}[]>([])
+  const [allClients, setAllClients] = useState<Client[]>([])
+  const [clientModalOpen, setClientModalOpen] = useState(false)
+  const [clientSearch, setClientSearch] = useState('')
 
   useEffect(() => {
-    getAllClients().then(data => {
-      allClientsRef.current = data.map(r => ({ name: r.name, phone: r.phone }))
-    }).catch(() => {})
+    getAllClients().then(setAllClients).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -50,6 +49,7 @@ export default function CarForm() {
       setCurrentStage(car.current_stage)
       setCode(car.code || '')
       if (car.client_id) {
+        setClientId(car.client_id)
         getClientById(car.client_id).then(cl => {
           if (cl) { setClientName(cl.name); setClientPhone(cl.phone) }
         }).catch(() => {})
@@ -62,36 +62,36 @@ export default function CarForm() {
     getLastCarCode().then(last => setCode(generateNextCode(last)))
   }, [id])
 
-  const highlightText = (text: string, query: string) => {
-    if (!query) return text
-    const idx = text.toLowerCase().indexOf(query.toLowerCase())
-    if (idx === -1) return text
-    return (
-      <>
-        {text.slice(0, idx)}
-        <strong>{text.slice(idx, idx + query.length)}</strong>
-        {text.slice(idx + query.length)}
-      </>
-    )
+  const openClientModal = () => {
+    setClientSearch('')
+    setClientModalOpen(true)
   }
 
-  const handleNameInput = (val: string) => {
-    setClientName(val)
-    if (!val) { setNameSugs([]); return }
-    setNameSugs(allClientsRef.current.filter(c => c.name.toLowerCase().includes(val.toLowerCase())))
+  const pickClient = (cl: Client) => {
+    setClientId(cl.id)
+    setClientName(cl.name)
+    setClientPhone(cl.phone)
+    setClientModalOpen(false)
   }
 
-  const handlePhoneInput = (val: string) => {
-    setClientPhone(val)
-    if (!val) { setPhoneSugs([]); return }
-    setPhoneSugs(allClientsRef.current.filter(c => c.phone.includes(val)))
+  const addNewClient = () => {
+    setClientId(null)
+    setClientName('')
+    setClientPhone('')
+    setClientModalOpen(false)
   }
 
-  const pickSuggestion = (s: {name: string; phone: string}) => {
-    setClientName(s.name)
-    setClientPhone(s.phone)
-    setNameSugs([])
-    setPhoneSugs([])
+  const pickContact = async () => {
+    if (!('contacts' in navigator)) return
+    try {
+      const props = ['name', 'tel'] as const
+      const contacts = await (navigator as any).contacts.select(props, { multiple: false })
+      if (contacts && contacts.length > 0) {
+        const c = contacts[0]
+        if (c.name && !clientName) setClientName(c.name)
+        if (c.tel && c.tel.length > 0) setClientPhone(c.tel[0])
+      }
+    } catch (err) { console.error('Contact picker error:', err) }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,7 +108,9 @@ export default function CarForm() {
         }
         if (user.role === 'admin') payload.current_stage = currentStage
         await updateCar(id, payload)
-        if (clientName) {
+        if (clientId) {
+          await updateCar(id, { client_id: clientId })
+        } else if (clientName) {
           const cl = await upsertClient(clientName, clientPhone)
           await updateCar(id, { client_id: cl.id })
         }
@@ -116,7 +118,9 @@ export default function CarForm() {
         const car = await createCar({
           name, model_year: modelYear, code, notes, created_by: user.id, updated_by: user.id,
         })
-        if (clientName) {
+        if (clientId) {
+          await updateCar(car.id, { client_id: clientId })
+        } else if (clientName) {
           const cl = await upsertClient(clientName, clientPhone)
           await updateCar(car.id, { client_id: cl.id })
         }
@@ -131,18 +135,12 @@ export default function CarForm() {
     }
   }
 
-  const pickContact = async () => {
-    if (!('contacts' in navigator)) return
-    try {
-      const props = ['name', 'tel'] as const
-      const contacts = await (navigator as any).contacts.select(props, { multiple: false })
-      if (contacts && contacts.length > 0) {
-        const c = contacts[0]
-        if (c.name && !clientName) setClientName(c.name)
-        if (c.tel && c.tel.length > 0) setClientPhone(c.tel[0])
-      }
-    } catch (err) { console.error('Contact picker error:', err) }
-  }
+  const filteredClients = allClients.filter(c =>
+    !clientSearch ||
+    c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    c.phone.includes(clientSearch) ||
+    (c.code && c.code.includes(clientSearch))
+  )
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -208,50 +206,71 @@ export default function CarForm() {
         <div className="border-t dark:border-gray-700 pt-4">
           <h3 className="font-medium mb-3">{t('car.request_client')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.client_name')}</label>
-              <input value={clientName} onChange={e => handleNameInput(e.target.value)}
-                onBlur={() => setTimeout(() => setNameSugs([]), 200)}
-                onKeyDown={e => { if (e.key === 'Escape') setNameSugs([]) }}
-                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-              {nameSugs.length > 0 && (
-                <ul className="absolute z-10 left-0 right-0 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-                  {nameSugs.map((s, i) => (
-                    <li key={i} onClick={() => pickSuggestion(s)}
-                      className="px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm flex justify-between gap-2">
-                      <span>{highlightText(s.name, clientName)}</span>
-                      <span className="text-gray-400 dark:text-gray-500 text-xs ltr">{s.phone}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="relative">
+                <input value={clientName} onChange={e => setClientName(e.target.value)}
+                  onFocus={openClientModal}
+                  readOnly={!!clientId}
+                  className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                {clientId && (
+                  <button type="button" onClick={() => { setClientId(null); setClientName(''); setClientPhone('') }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm">✕</button>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.client_phone')}</label>
-              <div className="relative flex gap-2">
-                <input value={clientPhone} onChange={e => handlePhoneInput(e.target.value)}
-                  onBlur={() => setTimeout(() => setPhoneSugs([]), 200)}
-                  onKeyDown={e => { if (e.key === 'Escape') setPhoneSugs([]) }}
+              <div className="flex gap-2">
+                <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+                  onFocus={!clientId ? openClientModal : undefined}
                   className="flex-1 p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 {('contacts' in navigator) && (
                   <button type="button" onClick={pickContact} title={t('car.pick_contact')}
                     className="px-3 py-3 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">📇</button>
                 )}
-                {phoneSugs.length > 0 && (
-                  <ul className="absolute z-10 left-0 right-0 top-full bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-                    {phoneSugs.map((s, i) => (
-                      <li key={i} onClick={() => pickSuggestion(s)}
-                        className="px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm flex justify-between gap-2">
-                        <span>{highlightText(s.phone, clientPhone)}</span>
-                        <span className="text-gray-400 dark:text-gray-500 text-xs truncate max-w-[120px]">{s.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
             </div>
           </div>
         </div>
+
+        {clientModalOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+               onClick={() => setClientModalOpen(false)}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col"
+                 onClick={e => e.stopPropagation()}>
+              <div className="p-4 border-b dark:border-gray-700">
+                <h3 className="font-semibold mb-2">{t('car.request_client')}</h3>
+                <input value={clientSearch} onChange={e => setClientSearch(e.target.value)}
+                  placeholder={t('clients.search')}
+                  className="w-full p-2 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" autoFocus />
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {filteredClients.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">{t('clients.no_data')}</div>
+                ) : (
+                  filteredClients.map(cl => (
+                    <div key={cl.id} onClick={() => pickClient(cl)}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer border-b dark:border-gray-700/50 last:border-0">
+                      <div>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{cl.name}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 mr-2 font-mono">{cl.code}</span>
+                      </div>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 ltr" dir="ltr">{cl.phone || '—'}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="p-3 border-t dark:border-gray-700">
+                <button type="button" onClick={addNewClient}
+                  className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors">
+                  + {t('clients.add')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-3 pt-4">
           <button type="submit" disabled={saving}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
