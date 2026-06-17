@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import {
   getCar, updateCar, deleteCar, getCarFees, upsertCarFees,
   getStageLogs, moveToStage,
-  getClientById, getCustomerById, upsertCustomer,
+  getClientById, getAllCustomers, upsertCustomer,
   getAttachments, addAttachment, deleteAttachment,
   getDeleteRequests, createDeleteRequest, reviewDeleteRequest,
   getCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment,
@@ -26,6 +26,17 @@ export default function CarDetails() {
   const [stageLogs, setStageLogs] = useState<CarStageLog[]>([])
   const [requestClient, setRequestClient] = useState<Client | null>(null)
   const [customerData, setCustomerData] = useState<Partial<Customer>>({})
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([])
+  const [customerModalOpen, setCustomerModalOpen] = useState(false)
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [customerAddMode, setCustomerAddMode] = useState(false)
+  const [newCustName, setNewCustName] = useState('')
+  const [newCustNationalId, setNewCustNationalId] = useState('')
+  const [newCustAddress, setNewCustAddress] = useState('')
+  const [newCustPostal, setNewCustPostal] = useState('')
+  const [newCustPhone, setNewCustPhone] = useState('')
+  const [newCustEmail, setNewCustEmail] = useState('')
+  const [addingCustomer, setAddingCustomer] = useState(false)
   const [attachments, setAttachments] = useState<(CarAttachment & { publicUrl: string })[]>([])
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
   const [evidencePublicUrl, setEvidencePublicUrl] = useState('')
@@ -57,14 +68,15 @@ export default function CarDetails() {
 
   const loadData = useCallback(async () => {
     if (!id) return
-    const [c, f, sl, att, dr, p] = await Promise.all([
-      getCar(id), getCarFees(id), getStageLogs(id), getAttachments(id), getDeleteRequests(id), getCustomerPayments(id),
+    const [c, f, sl, att, dr, p, custs] = await Promise.all([
+      getCar(id), getCarFees(id), getStageLogs(id), getAttachments(id), getDeleteRequests(id), getCustomerPayments(id), getAllCustomers(),
     ])
     setCar(c)
     setFees(f)
     setStageLogs(sl)
     setRequestClient(c?.client_id ? await getClientById(c.client_id) : null)
-    setCustomerData(c?.customer_id ? await getCustomerById(c.customer_id) || {} : {})
+    setCustomerData(c?.customer_id ? custs.find(cu => cu.id === c.customer_id) || {} : {})
+    setAllCustomers(custs)
     setAttachments(att)
     setDeleteRequests(dr)
     setPayments(p)
@@ -118,6 +130,42 @@ export default function CarDetails() {
     if (!id) return
     await upsertCarFees({ car_id: id, id: fees?.id, ...data })
     loadData()
+  }
+
+  const openCustomerModal = () => {
+    setCustomerSearch('')
+    setCustomerModalOpen(true)
+  }
+
+  const pickCustomer = (cust: Customer) => {
+    setCustomerData(cust)
+    setCustomerModalOpen(false)
+    if (id) updateCar(id, { customer_id: cust.id }).then(loadData).catch(() => {})
+  }
+
+  const addNewCustomer = () => {
+    setNewCustName('')
+    setNewCustNationalId('')
+    setNewCustAddress('')
+    setNewCustPostal('')
+    setNewCustPhone('')
+    setNewCustEmail('')
+    setCustomerAddMode(true)
+  }
+
+  const handleAddCustomer = async () => {
+    if (!newCustName.trim() || !newCustNationalId.trim()) return
+    setAddingCustomer(true)
+    try {
+      const cust = await upsertCustomer(newCustName.trim(), newCustNationalId.trim(), newCustAddress, newCustPostal, newCustPhone, newCustEmail)
+      setCustomerAddMode(false)
+      setCustomerModalOpen(false)
+      if (cust && id) {
+        await updateCar(id, { customer_id: cust.id })
+        loadData()
+      }
+    } catch { /* ignore */ }
+    setAddingCustomer(false)
   }
 
   const handleSaveCustomer = async () => {
@@ -533,21 +581,144 @@ export default function CarDetails() {
       {(car.current_stage === 'shipping_prep' || car.current_stage === 'shipping') && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <h2 className="font-semibold mb-4">{t('car.customer_info')}</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.full_name_latin')} <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <input value={customerData?.full_name_latin || ''}
+                  onChange={e => setCustomerData((prev: Partial<Customer>) => ({ ...prev, full_name_latin: e.target.value }))}
+                  onFocus={openCustomerModal}
+                  readOnly={!!car.customer_id}
+                  className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                {car.customer_id && (
+                  <button type="button" onClick={() => { setCustomerData({}); if (id) updateCar(id, { customer_id: null }).then(loadData) }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm">✕</button>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.phone')} <span className="text-red-500">*</span></label>
+              <input value={customerData?.phone || ''}
+                onChange={e => setCustomerData((prev: Partial<Customer>) => ({ ...prev, phone: e.target.value }))}
+                onFocus={!car.customer_id ? openCustomerModal : undefined}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(['full_name_latin', 'national_id', 'address_latin', 'postal_code', 'phone', 'email'] as const).map(key => (
+            {(['national_id', 'address_latin', 'postal_code', 'email'] as const).map(key => (
               <div key={key}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t(`car.${key}`)}{key !== 'email' && <> <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></>}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t(`car.${key}`)}{key !== 'email' && <span className="text-red-500">*</span>}</label>
                 <input value={customerData?.[key] || ''}
                   onChange={e => setCustomerData((prev: Partial<Customer>) => ({ ...prev, [key]: e.target.value }))}
-                  className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
             ))}
           </div>
+
           {canEdit && (
             <button onClick={handleSaveCustomer} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
               {t('app.save')}
             </button>
           )}
+        </div>
+      )}
+
+      {customerModalOpen && !customerAddMode && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setCustomerModalOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col"
+               onClick={e => e.stopPropagation()}>
+            <div className="p-5 sm:p-6 border-b dark:border-gray-700">
+              <h2 className="text-lg font-semibold mb-3">{t('car.customer_info')}</h2>
+              <input value={customerSearch} onChange={e => setCustomerSearch(e.target.value)}
+                placeholder={t('clients.search')}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" autoFocus />
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {allCustomers.filter(c =>
+                !customerSearch ||
+                c.full_name_latin.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                c.national_id.includes(customerSearch) ||
+                c.phone.includes(customerSearch) ||
+                (c.code && c.code.includes(customerSearch))
+              ).length === 0 ? (
+                <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">{t('app.no_data')}</div>
+              ) : (
+                allCustomers.filter(c =>
+                  !customerSearch ||
+                  c.full_name_latin.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                  c.national_id.includes(customerSearch) ||
+                  c.phone.includes(customerSearch) ||
+                  (c.code && c.code.includes(customerSearch))
+                ).map(cust => (
+                  <div key={cust.id} onClick={() => pickCustomer(cust)}
+                    className="grid grid-cols-[60px_1fr_120px] gap-3 items-center px-5 sm:px-6 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer border-b dark:border-gray-700/50 last:border-0">
+                    <span className="text-xs text-gray-400 dark:text-gray-500 font-mono text-left">{cust.code || '—'}</span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{cust.full_name_latin}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 ltr text-right" dir="ltr">{cust.phone || '—'}</span>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="p-5 sm:p-6 pt-3 border-t dark:border-gray-700">
+              <button type="button" onClick={addNewCustomer}
+                className="w-full p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 text-sm transition-colors font-medium">
+                + {t('customers.add')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {customerModalOpen && customerAddMode && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => { setCustomerAddMode(false); setCustomerModalOpen(false) }}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('customers.add')}</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.full_name_latin')} <span className="text-red-500">*</span></label>
+              <input value={newCustName} onChange={e => setNewCustName(e.target.value)}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" autoFocus />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.national_id')} <span className="text-red-500">*</span></label>
+              <input value={newCustNationalId} onChange={e => setNewCustNationalId(e.target.value)}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.address_latin')}</label>
+              <input value={newCustAddress} onChange={e => setNewCustAddress(e.target.value)}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.postal_code')}</label>
+              <input value={newCustPostal} onChange={e => setNewCustPostal(e.target.value)}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.phone')} <span className="text-red-500">*</span></label>
+              <input value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.email')}</label>
+              <input value={newCustEmail} onChange={e => setNewCustEmail(e.target.value)}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setCustomerAddMode(false)}
+                className="flex-1 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm transition-colors">
+                {t('app.cancel')}
+              </button>
+              <button type="button" onClick={handleAddCustomer} disabled={addingCustomer || !newCustName.trim() || !newCustNationalId.trim()}
+                className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors disabled:opacity-50">
+                {addingCustomer ? t('app.loading') : t('app.save')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
