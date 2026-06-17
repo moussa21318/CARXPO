@@ -67,6 +67,23 @@ export async function deleteUser(id: string): Promise<void> {
 }
 
 // --- Cars ---
+export async function getLastCarCode(): Promise<string | null> {
+  try {
+    const { data } = await getClient().from('cars').select('code').not('code', 'is', null).order('created_at', { ascending: false }).limit(1).maybeSingle()
+    return data?.code || null
+  } catch { return null }
+}
+
+export function generateNextCode(lastCode: string | null): string {
+  if (!lastCode) return 'A01'
+  const letter = lastCode[0]
+  const num = parseInt(lastCode.slice(1), 10)
+  if (num < 99) return `${letter}${String(num + 1).padStart(2, '0')}`
+  const nextLetter = String.fromCharCode(letter.charCodeAt(0) + 1)
+  if (nextLetter > 'Z') return 'A01'
+  return `${nextLetter}01`
+}
+
 export async function getCars(filter?: { stage?: CarStage; search?: string }): Promise<Car[]> {
   try {
     let q = getClient().from('cars').select('*').order('created_at', { ascending: false })
@@ -171,7 +188,15 @@ export async function getCarFees(carId: string): Promise<CarFees | null> {
 }
 
 export async function upsertCarFees(payload: Partial<CarFees>): Promise<CarFees> {
-  const { data, error } = await getClient().from('car_fees').upsert(payload, { onConflict: 'car_id' }).select().single()
+  const today = new Date().toISOString().slice(0, 10)
+  const payloadWithDates = { ...payload }
+  if ((payload as any).deposit !== undefined && payload.deposit! > 0 && !payload.deposit_date) payloadWithDates.deposit_date = today
+  if ((payload as any).deposit_02 !== undefined && payload.deposit_02! > 0 && !payload.deposit_02_date) payloadWithDates.deposit_02_date = today
+  if ((payload as any).transport_01 !== undefined && payload.transport_01! > 0 && !payload.transport_01_date) payloadWithDates.transport_01_date = today
+  if ((payload as any).parking !== undefined && payload.parking! > 0 && !payload.parking_date) payloadWithDates.parking_date = today
+  if ((payload as any).other_fees !== undefined && payload.other_fees! > 0 && !payload.other_fees_date) payloadWithDates.other_fees_date = today
+  if ((payload as any).transport_02 !== undefined && payload.transport_02! > 0 && !payload.transport_02_date) payloadWithDates.transport_02_date = today
+  const { data, error } = await getClient().from('car_fees').upsert(payloadWithDates, { onConflict: 'car_id' }).select().single()
   if (error) handleError('upsertCarFees failed', error)
   return data as CarFees
 }

@@ -48,6 +48,7 @@
     "add": "Ajouter une voiture",
     "edit": "Modifier la voiture",
     "name": "Nom de la voiture",
+    "code": "Code",
     "model_year": "Année modèle",
     "serial_number": "Numéro de série (17 car.)",
     "license_plate": "Plaque d'immatriculation",
@@ -231,7 +232,12 @@
     "export_excel": "Exporter Excel",
     "export_pdf": "Exporter PDF",
     "export_from": "Du",
-    "export_to": "Au"
+    "export_to": "Au",
+    "debit": "Débit",
+    "credit": "Crédit",
+    "avoir": "Solde",
+    "designation": "Désignation",
+    "balance": "Solde"
   },
   "payment_method": {
     "cash": "Espèces",

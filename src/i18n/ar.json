@@ -48,6 +48,7 @@
     "add": "إضافة سيارة",
     "edit": "تعديل السيارة",
     "name": "اسم السيارة",
+    "code": "الرمز",
     "model_year": "سنة الموديل",
     "serial_number": "الرقم التسلسلي (17 حرف)",
     "license_plate": "رقم اللوحة",
@@ -231,7 +232,12 @@
     "export_excel": "تصدير Excel",
     "export_pdf": "تصدير PDF",
     "export_from": "من تاريخ",
-    "export_to": "إلى تاريخ"
+    "export_to": "إلى تاريخ",
+    "debit": "مدين",
+    "credit": "دائن",
+    "avoir": "رصيد الحساب",
+    "designation": "البيان",
+    "balance": "الرصيد"
   },
   "payment_method": {
     "cash": "نقداً",

@@ -254,7 +254,7 @@ export default function CarDetails() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4 flex-wrap">
         <Link to="/cars" className="text-blue-600 dark:text-blue-400 hover:underline">{t('app.back')}</Link>
-        <h1 className="text-2xl font-bold flex-1">{car.name} ({car.model_year})</h1>
+        <h1 className="text-2xl font-bold flex-1">{car.name} ({car.model_year}) {car.code ? <span className="text-sm font-mono text-gray-400 dark:text-gray-500">[{car.code}]</span> : ''}</h1>
         {canEdit && (
           <Link to={`/cars/${id}/edit`} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-sm">
             {t('app.edit')}
@@ -420,14 +420,20 @@ export default function CarDetails() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <h2 className="font-semibold mb-4">{t('car.fees')}</h2>
           <div className="space-y-3 max-w-full overflow-hidden">
-            {(['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02'] as const).map(key => (
-              <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
-                <label className="sm:w-32 text-sm text-gray-600 dark:text-gray-300">{t(`car.${key}`)}</label>
-                <input type="number" value={fees?.[key] || 0} min={0}
-                  onChange={e => handleSaveFees({ [key]: Number(e.target.value) })}
-                  className="border rounded-lg p-2 w-full sm:w-48 outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-            ))}
+            {(['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02'] as const).map(key => {
+              const dateKey = `${key}_date` as keyof CarFees
+              return (
+                <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <label className="sm:w-28 text-sm text-gray-600 dark:text-gray-300">{t(`car.${key}`)}</label>
+                  <input type="number" value={fees?.[key] || 0} min={0}
+                    onChange={e => handleSaveFees({ [key]: Number(e.target.value) })}
+                    className="border rounded-lg p-2 w-full sm:w-36 outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="date" value={fees?.[dateKey] as string || ''}
+                    onChange={e => handleSaveFees({ [key]: fees?.[key] || 0, [dateKey]: e.target.value || null } as any)}
+                    className="border rounded-lg p-2 w-full sm:w-36 outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              )
+            })}
             <div className="text-sm font-medium pt-2 border-t dark:border-gray-700">
               {t('car.total_fees')}: {fees ? formatPrice(fees.deposit + fees.deposit_02 + fees.transport_01 + fees.parking + fees.other_fees + fees.transport_02) : '₩0'}
             </div>

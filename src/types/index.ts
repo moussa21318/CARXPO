@@ -27,6 +27,7 @@ export interface Car {
   seller_phone: string
   initial_price: number
   notes: string
+  code: string | null
   current_stage: CarStage
   confirmed: boolean
   created_by: string
@@ -44,6 +45,12 @@ export interface CarFees {
   parking: number
   other_fees: number
   transport_02: number
+  deposit_date: string | null
+  deposit_02_date: string | null
+  transport_01_date: string | null
+  parking_date: string | null
+  other_fees_date: string | null
+  transport_02_date: string | null
 }
 
 export interface RequestClient {

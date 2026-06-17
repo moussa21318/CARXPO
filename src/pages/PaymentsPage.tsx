@@ -1,27 +1,40 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, getAllRequestClients, getAllCarFees, getCustomerPayments, getGeneralPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient } from '../db/cloud'
-import { PAYMENT_METHOD_LABELS, type Car, type CarFees, type RequestClient, type CustomerPayment, type PaymentMethod } from '../types'
+import { getCars, getAllRequestClients, getAllCarFees, getGeneralPayments, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient } from '../db/cloud'
+import { PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 import { uploadFile } from '../utils/upload'
 import * as XLSX from 'xlsx'
 
-interface CustomerAccount {
-  requestClient: RequestClient | null
+interface TransactionRow {
+  id: string
+  date: string
+  clientName: string
+  clientId: string | null
+  carId: string | null
+  carCode: string | null
+  designation: string
+  debit: number
+  credit: number
+  paymentMethod?: string
+  paymentNotes?: string
+  paymentReceipt?: string
+  isGeneral: boolean
+  sourcePayment?: CustomerPayment
+}
+
+interface ClientDetail {
+  clientName: string
+  clientId: string | null
   car: Car | null
-  fees: CarFees | null
-  payments: CustomerPayment[]
-  totalFees: number
-  totalPaid: number
-  debt: number
-  notes: string
+  rows: TransactionRow[]
 }
 
 export default function PaymentsPage() {
   const { t } = useTranslation()
   const { user, canEdit } = useAuth()
-  const [accounts, setAccounts] = useState<CustomerAccount[]>([])
+  const [transactions, setTransactions] = useState<TransactionRow[]>([])
   const [loading, setLoading] = useState(true)
   const [quickPayOpen, setQuickPayOpen] = useState(false)
   const [quickPayClientName, setQuickPayClientName] = useState('')
@@ -32,7 +45,7 @@ export default function PaymentsPage() {
   const [quickPayReceipt, setQuickPayReceipt] = useState<File | null>(null)
   const [quickPayNotes, setQuickPayNotes] = useState('')
   const [detailOpen, setDetailOpen] = useState(false)
-  const [detailAccount, setDetailAccount] = useState<CustomerAccount | null>(null)
+  const [detailClient, setDetailClient] = useState<ClientDetail | null>(null)
   const [editPayment, setEditPayment] = useState<CustomerPayment | null>(null)
   const [editAmount, setEditAmount] = useState(0)
   const [editDate, setEditDate] = useState('')
@@ -40,7 +53,6 @@ export default function PaymentsPage() {
   const [editNotes, setEditNotes] = useState('')
   const [editReceipt, setEditReceipt] = useState<File | null>(null)
 
-  // Filter states
   const [filterClient, setFilterClient] = useState('')
   const [filterCar, setFilterCar] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -50,61 +62,95 @@ export default function PaymentsPage() {
   const [exportDateFrom, setExportDateFrom] = useState('')
   const [exportDateTo, setExportDateTo] = useState('')
 
-  const filteredAccounts = useMemo(() => {
-    return accounts.filter(acc => {
-      if (filterClient && acc.requestClient?.name) {
-        if (!acc.requestClient.name.toLowerCase().includes(filterClient.toLowerCase())) return false
-      }
-      if (filterCar && acc.car?.name) {
-        if (!acc.car.name.toLowerCase().includes(filterCar.toLowerCase())) return false
-      }
-      if (filterStatus === 'in_debt' && acc.debt <= 0) return false
-      if (filterStatus === 'settled' && acc.debt > 0) return false
-      if (filterStatus === 'general' && acc.car) return false
-      if (filterDateFrom || filterDateTo) {
-        const hasPaymentInRange = acc.payments.some(p => {
-          const pd = new Date(p.payment_date).getTime()
-          if (filterDateFrom && pd < new Date(filterDateFrom).getTime()) return false
-          if (filterDateTo && pd > new Date(filterDateTo).getTime()) return false
-          return true
-        })
-        if (!hasPaymentInRange) return false
-      }
-      return true
-    })
-  }, [accounts, filterClient, filterCar, filterStatus, filterDateFrom, filterDateTo])
-
   const loadData = async () => {
     setLoading(true)
-    const [cars, requestClients, allFees] = await Promise.all([
-      getCars(), getAllRequestClients(), getAllCarFees(),
+    const [cars, requestClients, allFees, allPayments, generalPayments] = await Promise.all([
+      getCars(), getAllRequestClients(), getAllCarFees(), getAllCustomerPayments(), getGeneralPayments(),
     ])
-    const allAccounts: CustomerAccount[] = []
-    for (const rc of requestClients) {
-      const car = cars.find(c => c.id === rc.car_id)
-      if (!car) continue
-      const fees = allFees.find(f => f.car_id === car.id) || null
-      const payments = await getCustomerPayments(car.id)
-      const totalFees = fees ? fees.deposit + fees.deposit_02 + fees.transport_01 + fees.parking + fees.other_fees + fees.transport_02 : 0
-      const totalPaid = payments.reduce((s, p) => s + p.amount, 0)
-      allAccounts.push({ requestClient: rc, car, fees, payments, totalFees, totalPaid, debt: totalFees - totalPaid, notes: '' })
-    }
-    const generalPayments = await getGeneralPayments()
-    if (generalPayments.length > 0) {
-      const totalPaid = generalPayments.reduce((s, p) => s + p.amount, 0)
-      const combinedNotes = generalPayments.map(p => p.notes).filter(Boolean).join('; ')
-      allAccounts.push({
-        requestClient: null,
-        car: null,
-        fees: null,
-        payments: generalPayments,
-        totalFees: 0,
-        totalPaid,
-        debt: -totalPaid,
-        notes: combinedNotes || t('payments.general_settlement'),
+    const rcMap = new Map(requestClients.map(rc => [rc.car_id, rc]))
+    const feeMap = new Map(allFees.map(f => [f.car_id, f]))
+    const carMap = new Map(cars.map(c => [c.id, c]))
+    const rows: TransactionRow[] = []
+
+    const addFeeRow = (date: string, clientName: string, clientId: string | null, carId: string, carCode: string | null, designation: string, amount: number) => {
+      if (amount <= 0) return
+      rows.push({
+        id: `fee-${carId}-${designation}-${date}`,
+        date: date || new Date().toISOString().slice(0, 10),
+        clientName,
+        clientId,
+        carId,
+        carCode,
+        designation: carCode ? `${designation} (${carCode})` : designation,
+        debit: amount,
+        credit: 0,
+        isGeneral: false,
       })
     }
-    setAccounts(allAccounts)
+
+    const addPaymentRow = (payment: CustomerPayment) => {
+      const rc = payment.car_id ? rcMap.get(payment.car_id) : null
+      const car = payment.car_id ? carMap.get(payment.car_id) : null
+      const clientName = rc?.name || (payment as any).client_name || ''
+      const paymentLabel = payment.car_id ? (car?.code ? `${t('payments.add')} (${car.code})` : t('payments.add')) : t('payments.general_settlement')
+      rows.push({
+        id: `pay-${payment.id}`,
+        date: payment.payment_date,
+        clientName,
+        clientId: rc?.id || null,
+        carId: payment.car_id,
+        carCode: car?.code || null,
+        designation: paymentLabel,
+        debit: 0,
+        credit: payment.amount,
+        paymentMethod: payment.payment_method,
+        paymentNotes: payment.notes,
+        paymentReceipt: payment.receipt_url || undefined,
+        isGeneral: !payment.car_id,
+        sourcePayment: payment,
+      })
+    }
+
+    const feeKeyLabels: Record<string, string> = {
+      deposit: 'car.deposit_fee',
+      deposit_02: 'car.deposit_02',
+      transport_01: 'car.transport_01',
+      parking: 'car.parking',
+      other_fees: 'car.other_fees',
+      transport_02: 'car.transport_02',
+    }
+    const feeDateKeys: Record<string, string> = {
+      deposit: 'deposit_date',
+      deposit_02: 'deposit_02_date',
+      transport_01: 'transport_01_date',
+      parking: 'parking_date',
+      other_fees: 'other_fees_date',
+      transport_02: 'transport_02_date',
+    }
+
+    for (const rc of requestClients) {
+      const car = carMap.get(rc.car_id)
+      if (!car) continue
+      const fees = feeMap.get(rc.car_id)
+      if (!fees) continue
+      for (const key of FEE_LABELS) {
+        const amount = fees[key] as number
+        if (amount <= 0) continue
+        const dateKey = feeDateKeys[key]
+        const date = (fees as any)[dateKey] as string | null
+        addFeeRow(date || new Date().toISOString().slice(0, 10), rc.name, rc.id, car.id, car.code, t(feeKeyLabels[key] || key), amount)
+      }
+    }
+
+    for (const payment of allPayments) {
+      addPaymentRow(payment)
+    }
+    for (const payment of generalPayments) {
+      addPaymentRow(payment)
+    }
+
+    rows.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
+    setTransactions(rows)
     setLoading(false)
   }
 
@@ -138,18 +184,14 @@ export default function PaymentsPage() {
     loadData()
   }
 
-  const clientNames = [...new Set(accounts.filter(a => a.requestClient).map(a => a.requestClient!.name))]
-  const filteredCars = quickPayClientName
-    ? accounts.filter(a => a.requestClient?.name === quickPayClientName && a.car)
+  const clientNames = [...new Set(transactions.filter(r => r.clientName).map(r => r.clientName))]
+  const clientCars = quickPayClientName
+    ? [...new Map(transactions.filter(r => r.clientName === quickPayClientName && r.carId).map(r => [r.carId, { id: r.carId!, code: r.carCode }])).values()]
     : []
 
-  const openDetail = async (acc: CustomerAccount) => {
-    if (acc.car) {
-      const payments = await getCustomerPayments(acc.car.id)
-      setDetailAccount({ ...acc, payments })
-    } else {
-      setDetailAccount(acc)
-    }
+  const openDetail = (row: TransactionRow) => {
+    const clientRows = transactions.filter(r => r.clientId === row.clientId && (!row.clientId || r.carId === row.carId))
+    setDetailClient({ clientName: row.clientName, clientId: row.clientId, car: null, rows: clientRows })
     setDetailOpen(true)
   }
 
@@ -184,87 +226,141 @@ export default function PaymentsPage() {
   const handleDeletePayment = async (payment: CustomerPayment) => {
     await deleteCustomerPayment(payment.id, payment.receipt_url || undefined)
     loadData()
-    if (detailOpen && detailAccount) {
-      if (detailAccount.car) {
-        const payments = await getCustomerPayments(detailAccount.car.id)
-        setDetailAccount({ ...detailAccount, payments })
-      } else {
-        setDetailAccount({ ...detailAccount, payments: detailAccount.payments.filter(p => p.id !== payment.id) })
-      }
+    if (detailOpen && detailClient) {
+      setDetailClient({
+        ...detailClient,
+        rows: detailClient.rows.filter(r => r.sourcePayment?.id !== payment.id),
+      })
     }
   }
 
-  const handleExportExcel = (acc: CustomerAccount) => {
-    let payments = acc.payments
-    if (exportDateFrom) payments = payments.filter(p => new Date(p.payment_date) >= new Date(exportDateFrom))
-    if (exportDateTo) payments = payments.filter(p => new Date(p.payment_date) <= new Date(exportDateTo))
-    const data = payments.map(p => ({
-      [t('payments.date')]: p.payment_date,
-      [t('payments.amount')]: p.amount,
-      [t('payments.method')]: t(PAYMENT_METHOD_LABELS[p.payment_method]),
-      [t('payments.notes')]: p.notes || '',
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(r => {
+      if (filterClient && !r.clientName.toLowerCase().includes(filterClient.toLowerCase())) return false
+      if (filterCar && r.carCode && !r.carCode.toLowerCase().includes(filterCar.toLowerCase())) return false
+      if (filterCar && !r.carCode && !r.designation.toLowerCase().includes(filterCar.toLowerCase())) return false
+      if (filterStatus === 'in_debt' && r.debit <= 0) return false
+      if (filterStatus === 'settled' && r.credit <= 0) return false
+      if (filterStatus === 'general' && !r.isGeneral) return false
+      if (filterDateFrom && r.date < filterDateFrom) return false
+      if (filterDateTo && r.date > filterDateTo) return false
+      return true
+    })
+  }, [transactions, filterClient, filterCar, filterStatus, filterDateFrom, filterDateTo])
+
+  const rowsWithBalance = useMemo(() => {
+    let balance = 0
+    return filteredTransactions.map(r => {
+      balance = balance + r.debit - r.credit
+      return { ...r, avoir: balance }
+    })
+  }, [filteredTransactions])
+
+  const handleExportExcel = () => {
+    const data = rowsWithBalance.map(r => ({
+      [t('payments.date')]: r.date,
+      [t('car.request_client')]: r.clientName,
+      [t('payments.designation')]: r.designation,
+      [t('payments.debit')]: r.debit || '',
+      [t('payments.credit')]: r.credit || '',
+      [t('payments.avoir')]: r.avoir,
     }))
-    const clientName = acc.requestClient?.name || t('payments.general_settlement')
-    const carName = acc.car ? `${acc.car.name} (${acc.car.model_year})` : ''
-    const summaryRows = [
-      { [t('payments.date')]: '', [t('payments.amount')]: '', [t('payments.method')]: '', [t('payments.notes')]: '' },
-      { [t('payments.date')]: clientName, [t('payments.amount')]: `${t('car.total_fees')}: ${acc.car ? formatPrice(acc.totalFees) : '—'}`, [t('payments.method')]: '', [t('payments.notes')]: '' },
-      { [t('payments.date')]: carName, [t('payments.amount')]: `${t('payments.total_paid')}: ${formatPrice(acc.totalPaid)}`, [t('payments.method')]: '', [t('payments.notes')]: '' },
-      { [t('payments.date')]: '', [t('payments.amount')]: `${t('payments.debt')}: ${formatPrice(acc.debt)}`, [t('payments.method')]: '', [t('payments.notes')]: '' },
-    ]
-    const ws = XLSX.utils.json_to_sheet([...data, ...summaryRows])
+    const ws = XLSX.utils.json_to_sheet(data)
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Payments')
-    XLSX.writeFile(wb, `payments-${acc.requestClient?.name || 'general'}-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    XLSX.utils.book_append_sheet(wb, ws, 'Statement')
+    XLSX.writeFile(wb, `statement-${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
 
-  const handleExportPdf = (acc: CustomerAccount) => {
-    let payments = acc.payments
-    if (exportDateFrom) payments = payments.filter(p => new Date(p.payment_date) >= new Date(exportDateFrom))
-    if (exportDateTo) payments = payments.filter(p => new Date(p.payment_date) <= new Date(exportDateTo))
-    const clientName = acc.requestClient?.name || t('payments.general_settlement')
-    const carName = acc.car ? `${acc.car.name} (${acc.car.model_year})` : ''
-    const paymentRows = payments.map(p => `
+  const handleExportPdf = () => {
+    const rowsHtml = rowsWithBalance.map(r => `
       <tr>
-        <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${p.payment_date}</td>
-        <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${formatPrice(p.amount)}</td>
-        <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${t(PAYMENT_METHOD_LABELS[p.payment_method])}</td>
-        <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${p.notes || ''}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.date}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.clientName}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.designation}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.debit ? formatPrice(r.debit) : ''}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.credit ? formatPrice(r.credit) : ''}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${formatPrice(r.avoir)}</td>
       </tr>
     `).join('')
     const printWin = window.open('', '_blank')
     if (!printWin) return
     printWin.document.write(`
-      <!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>${clientName}</title>
+      <!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>${t('payments.title')}</title>
+      <style>
+        body{font-family:system-ui,sans-serif;padding:30px;direction:rtl}
+        h2{margin-bottom:20px}
+        table{width:100%;border-collapse:collapse}
+        th{background:#eee;padding:8px;border:1px solid #ddd;text-align:center;font-size:13px}
+        td{font-size:12px}
+      </style></head><body>
+      <h2>${t('payments.title')}</h2>
+      <table>
+        <thead><tr>
+          <th>${t('payments.date')}</th><th>${t('car.request_client')}</th><th>${t('payments.designation')}</th><th>${t('payments.debit')}</th><th>${t('payments.credit')}</th><th>${t('payments.avoir')}</th>
+        </tr></thead>
+        <tbody>${rowsHtml || `<tr><td colspan="6" style="text-align:center;color:#999;padding:20px">${t('app.no_data')}</td></tr>`}</tbody>
+      </table>
+      <script>window.onload=function(){setTimeout(function(){window.print();window.close()},500)}<\/script>
+    </body></html>`)
+    printWin.document.close()
+  }
+
+  const handleExportDetailExcel = (client: ClientDetail) => {
+    let rows = client.rows
+    if (exportDateFrom) rows = rows.filter(r => r.date >= exportDateFrom)
+    if (exportDateTo) rows = rows.filter(r => r.date <= exportDateTo)
+    let balance = 0
+    const data = rows.map(r => {
+      balance = balance + r.debit - r.credit
+      return {
+        [t('payments.date')]: r.date,
+        [t('payments.designation')]: r.designation,
+        [t('payments.debit')]: r.debit || '',
+        [t('payments.credit')]: r.credit || '',
+        [t('payments.avoir')]: balance,
+      }
+    })
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Client')
+    XLSX.writeFile(wb, `client-${client.clientName || 'general'}-${new Date().toISOString().slice(0, 10)}.xlsx`)
+  }
+
+  const handleExportDetailPdf = (client: ClientDetail) => {
+    let rows = client.rows
+    if (exportDateFrom) rows = rows.filter(r => r.date >= exportDateFrom)
+    if (exportDateTo) rows = rows.filter(r => r.date <= exportDateTo)
+    let balance = 0
+    const rowsHtml = rows.map(r => {
+      balance = balance + r.debit - r.credit
+      return `<tr>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.date}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.designation}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.debit ? formatPrice(r.debit) : ''}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${r.credit ? formatPrice(r.credit) : ''}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${formatPrice(balance)}</td>
+      </tr>`
+    }).join('')
+    const printWin = window.open('', '_blank')
+    if (!printWin) return
+    printWin.document.write(`
+      <!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>${client.clientName}</title>
       <style>
         body{font-family:system-ui,sans-serif;padding:30px;direction:rtl}
         h2{margin:0;font-size:20px}
         .sub{color:#666;margin:4px 0 20px;font-size:14px}
-        .summary{display:flex;gap:30px;margin-bottom:24px}
-        .summary div{background:#f5f5f5;padding:12px 20px;border-radius:8px;text-align:center}
-        .summary div .label{font-size:12px;color:#666}
-        .summary div .value{font-size:18px;font-weight:700}
         table{width:100%;border-collapse:collapse}
-        th{background:#eee;padding:8px 10px;border:1px solid #ddd;text-align:center;font-size:14px}
-        td{font-size:13px}
-        @media print{body{padding:20px}}
+        th{background:#eee;padding:8px;border:1px solid #ddd;text-align:center;font-size:13px}
+        td{font-size:12px}
       </style></head><body>
-      <h2>${clientName}</h2>
-      <div class="sub">${carName}</div>
-      <div class="summary">
-        <div><div class="label">${t('car.total_fees')}</div><div class="value">${acc.car ? formatPrice(acc.totalFees) : '—'}</div></div>
-        <div><div class="label">${t('payments.total_paid')}</div><div class="value">${formatPrice(acc.totalPaid)}</div></div>
-        <div><div class="label">${t('payments.debt')}</div><div class="value">${formatPrice(acc.debt)}</div></div>
-      </div>
+      <h2>${client.clientName}</h2>
       <table>
         <thead><tr>
-          <th>${t('payments.date')}</th><th>${t('payments.amount')}</th><th>${t('payments.method')}</th><th>${t('payments.notes')}</th>
+          <th>${t('payments.date')}</th><th>${t('payments.designation')}</th><th>${t('payments.debit')}</th><th>${t('payments.credit')}</th><th>${t('payments.avoir')}</th>
         </tr></thead>
-        <tbody>${paymentRows || `<tr><td colspan="4" style="text-align:center;color:#999;padding:20px">${t('app.no_data')}</td></tr>`}</tbody>
+        <tbody>${rowsHtml || `<tr><td colspan="5" style="text-align:center;color:#999;padding:20px">${t('app.no_data')}</td></tr>`}</tbody>
       </table>
-      <script>
-        window.onload = function() { setTimeout(function() { window.print(); window.close() }, 500) }
-      <\/script>
+      <script>window.onload=function(){setTimeout(function(){window.print();window.close()},500)}<\/script>
     </body></html>`)
     printWin.document.close()
   }
@@ -273,14 +369,24 @@ export default function PaymentsPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <h1 className="text-2xl font-bold">{t('payments.title')}</h1>
-        {canEdit && (
-          <button onClick={() => { setQuickPayClientName(''); setQuickPayCarId(''); setQuickPayAmount(0); setQuickPayDate(new Date().toISOString().slice(0, 10)); setQuickPayMethod('cash'); setQuickPayReceipt(null); setQuickPayNotes(''); setQuickPayOpen(true) }}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
-            + {t('payments.quick_add')}
+        <div className="flex gap-2">
+          {canEdit && (
+            <button onClick={() => { setQuickPayClientName(''); setQuickPayCarId(''); setQuickPayAmount(0); setQuickPayDate(new Date().toISOString().slice(0, 10)); setQuickPayMethod('cash'); setQuickPayReceipt(null); setQuickPayNotes(''); setQuickPayOpen(true) }}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+              + {t('payments.quick_add')}
+            </button>
+          )}
+          <button onClick={handleExportExcel}
+            className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 text-sm">
+            {t('payments.export_excel')}
           </button>
-        )}
+          <button onClick={handleExportPdf}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm">
+            {t('payments.export_pdf')}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-4">
@@ -305,43 +411,33 @@ export default function PaymentsPage() {
           className="min-w-[140px] p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
       </div>
 
-      {filteredAccounts.length === 0 ? (
+      {rowsWithBalance.length === 0 ? (
         <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('app.no_data')}</div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[700px]">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.date')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.request_client')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.name')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.total_fees')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.total_paid')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.debt')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.notes_column')}</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.designation')}</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.debit')}</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.credit')}</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.avoir')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.details')}</th>
               </tr>
             </thead>
             <tbody>
-              {filteredAccounts.map(acc => (
-                <tr key={acc.car?.id || 'general'} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">
-                    {acc.requestClient ? (
-                      <span className="font-medium">{acc.requestClient.name}</span>
-                    ) : (
-                      <span className="text-gray-400">{t('payments.no_client')}</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right text-sm text-gray-600 dark:text-gray-300">{acc.car ? `${acc.car.name} (${acc.car.model_year})` : '—'}</td>
-                  <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">{acc.car ? formatPrice(acc.totalFees) : '—'}</td>
-                  <td className="p-3 text-right text-sm text-green-600 dark:text-green-400">{formatPrice(acc.totalPaid)}</td>
+              {rowsWithBalance.map(r => (
+                <tr key={r.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <td className="p-3 text-right text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{r.date}</td>
+                  <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">{r.clientName || '—'}</td>
+                  <td className="p-3 text-right text-sm text-gray-600 dark:text-gray-300">{r.designation}</td>
+                  <td className="p-3 text-right text-sm text-red-600 dark:text-red-400">{r.debit ? formatPrice(r.debit) : ''}</td>
+                  <td className="p-3 text-right text-sm text-green-600 dark:text-green-400">{r.credit ? formatPrice(r.credit) : ''}</td>
+                  <td className="p-3 text-right text-sm font-semibold text-gray-800 dark:text-gray-200">{formatPrice(r.avoir)}</td>
                   <td className="p-3 text-right text-sm">
-                    <span className={`font-semibold ${acc.debt > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                      {acc.debt > 0 ? formatPrice(acc.debt) : acc.debt < 0 ? `-${formatPrice(Math.abs(acc.debt))}` : '₩0'}
-                    </span>
-                  </td>
-                  <td className="p-3 text-right text-sm text-gray-500 dark:text-gray-400 max-w-[150px] truncate">{acc.notes || '—'}</td>
-                  <td className="p-3 text-right text-sm">
-                    <button onClick={() => openDetail(acc)}
+                    <button onClick={() => openDetail(r)}
                       className="text-blue-600 dark:text-blue-400 hover:underline">{t('app.details')}</button>
                   </td>
                 </tr>
@@ -372,8 +468,8 @@ export default function PaymentsPage() {
               <select value={quickPayCarId} onChange={e => setQuickPayCarId(e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
                 <option value="">{t('payments.general_settlement')}</option>
-                {filteredCars.map(acc => (
-                  <option key={acc.car!.id} value={acc.car!.id}>{acc.car!.name} ({acc.car!.model_year})</option>
+                {clientCars.map(c => (
+                  <option key={c.id} value={c.id}>{c.code || c.id}</option>
                 ))}
               </select>
             </div>
@@ -420,75 +516,76 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {detailOpen && detailAccount && (
+      {detailOpen && detailClient && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
              onClick={() => setDetailOpen(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-lg p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto"
                onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold">{detailAccount.requestClient ? detailAccount.requestClient.name : (detailAccount.car ? detailAccount.car.name : t('payments.general_settlement'))}</h2>
-            <div className="text-sm text-gray-500 dark:text-gray-400">{detailAccount.car ? `${detailAccount.car.name} (${detailAccount.car.model_year})` : detailAccount.notes}</div>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                <div className="text-xs text-gray-500 dark:text-gray-400">{t('car.total_fees')}</div>
-                <div className="font-semibold">{detailAccount.car ? formatPrice(detailAccount.totalFees) : '—'}</div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3">
-                <div className="text-xs text-gray-500 dark:text-gray-400">{t('payments.total_paid')}</div>
-                <div className="font-semibold text-green-700 dark:text-green-300">{formatPrice(detailAccount.totalPaid)}</div>
-              </div>
-              <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-3">
-                <div className="text-xs text-gray-500 dark:text-gray-400">{t('payments.debt')}</div>
-                <div className={`font-semibold ${detailAccount.debt > 0 ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
-                  {formatPrice(detailAccount.debt)}
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">{t('payments.payment_history')}</h3>
-              {detailAccount.payments.length === 0 ? (
-                <p className="text-gray-400 text-sm">{t('app.no_data')}</p>
-              ) : (
-                detailAccount.payments.map(p => (
-                  <div key={p.id} className="flex items-center gap-3 text-sm border-b dark:border-gray-700 pb-2 flex-wrap">
-                    <span className="text-gray-500 dark:text-gray-400 text-xs">{p.payment_date}</span>
-                    <span className="font-semibold text-green-700 dark:text-green-300">{formatPrice(p.amount)}</span>
-                    <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{t(PAYMENT_METHOD_LABELS[p.payment_method])}</span>
-                    {p.receipt_url && (
-                      <a href={getClient().storage.from('car_attachments').getPublicUrl(p.receipt_url).data.publicUrl}
-                        target="_blank" rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline text-xs">{t('payments.receipt')}</a>
-                    )}
-                    {p.notes && <span className="text-gray-500 dark:text-gray-400 text-xs">{p.notes}</span>}
-                    {user?.role === 'admin' && (
-                      <>
-                        <button onClick={() => openEditPayment(p)}
-                          className="text-blue-500 hover:text-blue-700 text-xs px-1">✎</button>
-                        <button onClick={() => handleDeletePayment(p)}
-                          className="text-red-500 hover:text-red-700 text-xs px-1">✕</button>
-                      </>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="border-t dark:border-gray-700 pt-4">
+            <h2 className="text-lg font-semibold">{detailClient.clientName || t('payments.general_settlement')}</h2>
+            <div className="border-t dark:border-gray-700 pt-3">
               <h3 className="text-sm font-medium mb-2">{t('export.title')}</h3>
               <div className="flex flex-wrap gap-2 mb-3">
                 <input type="date" value={exportDateFrom} onChange={e => setExportDateFrom(e.target.value)}
                   title={t('payments.export_from')}
-                  className="flex-1 min-w-[120px] p-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                  className="flex-1 min-w-[100px] p-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                 <input type="date" value={exportDateTo} onChange={e => setExportDateTo(e.target.value)}
                   title={t('payments.export_to')}
-                  className="flex-1 min-w-[120px] p-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
-                <button onClick={() => handleExportExcel(detailAccount)}
+                  className="flex-1 min-w-[100px] p-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <button onClick={() => handleExportDetailExcel(detailClient)}
                   className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
                   {t('payments.export_excel')}
                 </button>
-                <button onClick={() => handleExportPdf(detailAccount)}
+                <button onClick={() => handleExportDetailPdf(detailClient)}
                   className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
                   {t('payments.export_pdf')}
                 </button>
               </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[500px]">
+                <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
+                  <tr>
+                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.date')}</th>
+                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.designation')}</th>
+                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.debit')}</th>
+                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.credit')}</th>
+                    <th className="text-right p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.avoir')}</th>
+                    {user?.role === 'admin' && <th className="text-center p-2 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.edit')}</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    let balance = 0
+                    let rows = detailClient.rows
+                    if (exportDateFrom) rows = rows.filter(r => r.date >= exportDateFrom)
+                    if (exportDateTo) rows = rows.filter(r => r.date <= exportDateTo)
+                    return rows.map(r => {
+                      balance = balance + r.debit - r.credit
+                      return (
+                        <tr key={r.id} className="border-b dark:border-gray-700">
+                          <td className="p-2 text-right text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{r.date}</td>
+                          <td className="p-2 text-right text-sm text-gray-700 dark:text-gray-300">{r.designation}</td>
+                          <td className="p-2 text-right text-sm text-red-600 dark:text-red-400">{r.debit ? formatPrice(r.debit) : ''}</td>
+                          <td className="p-2 text-right text-sm text-green-600 dark:text-green-400">{r.credit ? formatPrice(r.credit) : ''}</td>
+                          <td className="p-2 text-right text-sm font-semibold">{formatPrice(balance)}</td>
+                          {user?.role === 'admin' && (
+                            <td className="p-2 text-center text-sm whitespace-nowrap">
+                              {r.sourcePayment && (
+                                <>
+                                  <button onClick={() => openEditPayment(r.sourcePayment!)}
+                                    className="text-blue-500 hover:text-blue-700 text-xs px-1">✎</button>
+                                  <button onClick={() => handleDeletePayment(r.sourcePayment!)}
+                                    className="text-red-500 hover:text-red-700 text-xs px-1">✕</button>
+                                </>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      )
+                    })
+                  })()}
+                </tbody>
+              </table>
             </div>
             <button onClick={() => setDetailOpen(false)}
               className="w-full p-3 bg-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 dark:bg-gray-600 text-sm transition-colors">

@@ -48,6 +48,7 @@
     "add": "Add Car",
     "edit": "Edit Car",
     "name": "Car Name",
+    "code": "Code",
     "model_year": "Model Year",
     "serial_number": "Serial Number (17 chars)",
     "license_plate": "License Plate",
@@ -231,7 +232,12 @@
     "export_excel": "Export Excel",
     "export_pdf": "Export PDF",
     "export_from": "From date",
-    "export_to": "To date"
+    "export_to": "To date",
+    "debit": "Debit",
+    "credit": "Credit",
+    "avoir": "Balance",
+    "designation": "Description",
+    "balance": "Balance"
   },
   "payment_method": {
     "cash": "Cash",

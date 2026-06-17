@@ -37,6 +37,7 @@ CREATE TABLE cars (
   seller_phone TEXT,
   initial_price NUMERIC(12,2) DEFAULT 0,
   notes TEXT DEFAULT '',
+  code VARCHAR(3) UNIQUE,
   current_stage TEXT NOT NULL DEFAULT 'request' CHECK (current_stage IN ('request','deposit','purchase','shipping_prep','shipping')),
   confirmed BOOLEAN DEFAULT false,
   created_by UUID REFERENCES users(id),
@@ -54,7 +55,13 @@ CREATE TABLE car_fees (
   transport_01 NUMERIC(12,2) DEFAULT 0,
   parking NUMERIC(12,2) DEFAULT 0,
   other_fees NUMERIC(12,2) DEFAULT 0,
-  transport_02 NUMERIC(12,2) DEFAULT 0
+  transport_02 NUMERIC(12,2) DEFAULT 0,
+  deposit_date DATE DEFAULT NULL,
+  deposit_02_date DATE DEFAULT NULL,
+  transport_01_date DATE DEFAULT NULL,
+  parking_date DATE DEFAULT NULL,
+  other_fees_date DATE DEFAULT NULL,
+  transport_02_date DATE DEFAULT NULL
 );
 
 -- Stage log
