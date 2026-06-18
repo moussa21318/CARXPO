@@ -219,3 +219,31 @@ ALTER TABLE change_log DISABLE ROW LEVEL SECURITY;
 ALTER TABLE car_attachments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_payments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
+
+-- Automatic activity logging
+CREATE OR REPLACE FUNCTION log_change() RETURNS TRIGGER AS $$
+DECLARE
+  uid UUID;
+BEGIN
+  uid := COALESCE(NEW.updated_by, OLD.updated_by, NEW.created_by, OLD.created_by);
+  INSERT INTO change_log (table_name, record_id, operation, old_data, new_data, user_id)
+  VALUES (
+    TG_TABLE_NAME,
+    COALESCE(NEW.id::text, OLD.id::text),
+    TG_OP,
+    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN to_jsonb(OLD) ELSE NULL END,
+    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN to_jsonb(NEW) ELSE NULL END,
+    uid
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_cars_log AFTER INSERT OR UPDATE OR DELETE ON cars FOR EACH ROW EXECUTE FUNCTION log_change();
+CREATE TRIGGER trg_car_fees_log AFTER INSERT OR UPDATE OR DELETE ON car_fees FOR EACH ROW EXECUTE FUNCTION log_change();
+CREATE TRIGGER trg_car_stage_logs_log AFTER INSERT OR UPDATE OR DELETE ON car_stage_logs FOR EACH ROW EXECUTE FUNCTION log_change();
+CREATE TRIGGER trg_clients_log AFTER INSERT OR UPDATE OR DELETE ON clients FOR EACH ROW EXECUTE FUNCTION log_change();
+CREATE TRIGGER trg_customers_log AFTER INSERT OR UPDATE OR DELETE ON customers FOR EACH ROW EXECUTE FUNCTION log_change();
+CREATE TRIGGER trg_edit_requests_log AFTER INSERT OR UPDATE OR DELETE ON edit_requests FOR EACH ROW EXECUTE FUNCTION log_change();
+CREATE TRIGGER trg_delete_requests_log AFTER INSERT OR UPDATE OR DELETE ON delete_requests FOR EACH ROW EXECUTE FUNCTION log_change();
+CREATE TRIGGER trg_customer_payments_log AFTER INSERT OR UPDATE OR DELETE ON customer_payments FOR EACH ROW EXECUTE FUNCTION log_change();
