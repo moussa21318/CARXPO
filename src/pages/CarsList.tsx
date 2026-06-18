@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCarsPaginated, deleteCars, getDeleteRequests, createDeleteRequest, reviewDeleteRequest } from '../db/cloud'
-import { STAGE_ORDER, STAGE_LABELS, type Car, type CarStage, type DeleteRequest } from '../types'
+import { getCarsPaginated, getAllClients, deleteCars, getDeleteRequests, createDeleteRequest, reviewDeleteRequest } from '../db/cloud'
+import { STAGE_ORDER, STAGE_LABELS, type Car, type CarStage, type Client, type DeleteRequest } from '../types'
 import { formatPrice } from '../utils/format'
 
 const PAGE_SIZE = 20
@@ -23,21 +23,25 @@ export default function CarsList() {
   const [deleteReqReason, setDeleteReqReason] = useState('')
   const [manageDeleteOpen, setManageDeleteOpen] = useState(false)
   const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([])
+  const [clients, setClients] = useState<Client[]>([])
   const stageFilter = (searchParams.get('stage') as CarStage) || undefined
   const searchFilter = searchParams.get('search') || undefined
+  const clientFilter = searchParams.get('client') || undefined
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const loadCars = async () => {
     setLoading(true)
-    const { cars: data, total: count } = await getCarsPaginated({ stage: stageFilter, search: searchFilter, page, pageSize: PAGE_SIZE })
+    const { cars: data, total: count } = await getCarsPaginated({ stage: stageFilter, search: searchFilter, clientId: clientFilter, page, pageSize: PAGE_SIZE })
     setCars(data)
     setTotal(count)
     setSelected(new Set())
     setLoading(false)
   }
 
-  useEffect(() => { loadCars() }, [stageFilter, searchFilter, page])
+  useEffect(() => { getAllClients().then(setClients) }, [])
+
+  useEffect(() => { loadCars() }, [stageFilter, searchFilter, clientFilter, page])
 
   useEffect(() => { setPage(1) }, [stageFilter, searchFilter])
 
@@ -110,6 +114,13 @@ export default function CarsList() {
             <option key={s} value={s}>{t(STAGE_LABELS[s])}</option>
           ))}
         </select>
+        <select value={clientFilter || ''} onChange={e => setSearchParams(e.target.value ? { client: e.target.value } : {})}
+          className="border dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 outline-none min-w-[160px]">
+          <option value="">{t('car.all_clients')}</option>
+          {clients.map(cl => (
+            <option key={cl.id} value={cl.id}>{cl.code} — {cl.name}</option>
+          ))}
+        </select>
         <div className="flex border dark:border-gray-600 rounded-lg overflow-hidden">
           <button onClick={() => setViewMode('table')}
             className={`px-3 py-2 text-sm transition-colors ${viewMode === 'table' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
@@ -153,6 +164,7 @@ export default function CarsList() {
                     onChange={toggleAll} className="w-4 h-4" />
                 </th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.name')}</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('clients.code')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.model_year')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.current_stage')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.initial_price')}</th>
@@ -173,6 +185,7 @@ export default function CarsList() {
                       <span className="text-xs text-gray-400 dark:text-gray-500">{c.license_plate || c.serial_number?.slice(-8) || ''}</span>
                     </div>
                   </td>
+                  <td className="p-3 text-right text-sm font-mono text-gray-500 dark:text-gray-400">{clients.find(cl => cl.id === c.client_id)?.code || '—'}</td>
                   <td className="p-3 text-gray-600 dark:text-gray-300">{c.model_year}</td>
                   <td className="p-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -212,6 +225,11 @@ export default function CarsList() {
                     <span className="text-sm text-gray-500 dark:text-gray-400">{c.model_year}</span>
                   </div>
                   <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">{c.license_plate || c.serial_number?.slice(-8) || '-'}</div>
+                  {clients.find(cl => cl.id === c.client_id) && (
+                    <div className="text-xs font-mono text-gray-400 dark:text-gray-500">
+                      {clients.find(cl => cl.id === c.client_id)!.code} — {clients.find(cl => cl.id === c.client_id)!.name}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="text-sm font-medium">{formatPrice(c.initial_price)}</div>

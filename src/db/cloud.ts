@@ -97,12 +97,13 @@ export async function getCars(filter?: { stage?: CarStage; search?: string }): P
   } catch { return [] }
 }
 
-export async function getCarsPaginated(filter: { stage?: CarStage; search?: string; page: number; pageSize: number }): Promise<{ cars: Car[]; total: number }> {
+export async function getCarsPaginated(filter: { stage?: CarStage; search?: string; clientId?: string; page: number; pageSize: number }): Promise<{ cars: Car[]; total: number }> {
   try {
     const from = (filter.page - 1) * filter.pageSize
     const to = from + filter.pageSize - 1
     let q = getClient().from('cars').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to)
     if (filter.stage) q = q.eq('current_stage', filter.stage)
+    if (filter.clientId) q = q.eq('client_id', filter.clientId)
     if (filter.search) {
       q = q.or(`name.ilike.%${filter.search}%,serial_number.ilike.%${filter.search}%,license_plate.ilike.%${filter.search}%,seller_phone.ilike.%${filter.search}%`)
     }
