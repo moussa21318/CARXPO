@@ -230,9 +230,9 @@ BEGIN
   VALUES (
     TG_TABLE_NAME,
     COALESCE(NEW.id::text, OLD.id::text),
-    TG_OP,
-    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN to_jsonb(OLD) ELSE NULL END,
-    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN to_jsonb(NEW) ELSE NULL END,
+    LOWER(TG_OP),
+    CASE WHEN LOWER(TG_OP) IN ('update', 'delete') THEN to_jsonb(OLD) ELSE NULL END,
+    CASE WHEN LOWER(TG_OP) IN ('insert', 'update') THEN to_jsonb(NEW) ELSE NULL END,
     uid
   );
   RETURN NEW;
