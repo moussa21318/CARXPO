@@ -562,7 +562,7 @@ export default function PaymentsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
-              <input type="number" value={quickPayAmount || ''} onChange={e => setQuickPayAmount(Number(e.target.value))} min={0}
+              <input type="number" value={quickPayAmount || ''} onChange={e => setQuickPayAmount(Number(e.target.value))}
                 className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
             <div>
@@ -594,7 +594,7 @@ export default function PaymentsPage() {
                 className="flex-1 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm transition-colors">
                 {t('app.cancel')}
               </button>
-              <button onClick={handleQuickPay} disabled={!quickPayClientId || quickPayAmount <= 0}
+              <button onClick={handleQuickPay} disabled={!quickPayClientId || !quickPayAmount}
                 className="flex-1 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors disabled:opacity-50">
                 {t('app.save')}
               </button>
@@ -683,7 +683,7 @@ export default function PaymentsPage() {
       {detailOpen && detailClient && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
              onClick={() => setDetailOpen(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-lg p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto"
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-4xl p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto"
                onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold">{detailClient.clientName || t('payments.general_settlement')}</h2>
             <div className="border-t dark:border-gray-700 pt-3">
@@ -706,7 +706,7 @@ export default function PaymentsPage() {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px]" dir={isRtl ? 'rtl' : 'ltr'}>
+              <table className="w-full min-w-[700px]" dir={isRtl ? 'rtl' : 'ltr'}>
                 <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
                   <tr>
                     {detailCols.map(c => (
