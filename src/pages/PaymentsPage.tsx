@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, getAllClients, getAllCarFees, getGeneralPayments, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient, upsertClient } from '../db/cloud'
+import { getCars, getAllClients, getAllCarFees, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient, upsertClient } from '../db/cloud'
 import { PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type Client, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 import { uploadFile } from '../utils/upload'
@@ -73,8 +73,8 @@ export default function PaymentsPage() {
 
   const loadData = async () => {
     setLoading(true)
-    const [cars, clients, allFees, allPayments, generalPayments] = await Promise.all([
-      getCars(), getAllClients(), getAllCarFees(), getAllCustomerPayments(), getGeneralPayments(),
+    const [cars, clients, allFees, allPayments] = await Promise.all([
+      getCars(), getAllClients(), getAllCarFees(), getAllCustomerPayments(),
     ])
     setAllCars(cars)
     setAllClients(clients)
@@ -156,9 +156,6 @@ export default function PaymentsPage() {
     for (const payment of allPayments) {
       addPaymentRow(payment)
     }
-    for (const payment of generalPayments) {
-      addPaymentRow(payment)
-    }
 
     rows.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
     setTransactions(rows)
@@ -173,7 +170,7 @@ export default function PaymentsPage() {
   }, [quickPayClientId, allCars])
 
   const handleQuickPay = async () => {
-    if (!user || !quickPayClientId || quickPayAmount <= 0) return
+    if (!user || !quickPayClientId || !quickPayAmount) return
     let receiptUrl: string | null = null
     const carId = quickPayCarId || null
     if (quickPayReceipt) {
