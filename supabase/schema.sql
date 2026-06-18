@@ -152,6 +152,7 @@ CREATE TABLE delete_requests (
 -- Customer payments (track payments received from end customer)
 CREATE TABLE customer_payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
   car_id UUID REFERENCES cars(id) ON DELETE SET NULL,
   amount NUMERIC(12,2) NOT NULL,
   payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -203,6 +204,7 @@ CREATE INDEX IF NOT EXISTS idx_car_stage_logs_car_id ON car_stage_logs(car_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_customer_payments_car_id ON customer_payments(car_id);
+CREATE INDEX IF NOT EXISTS idx_customer_payments_client_id ON customer_payments(client_id);
 
 -- Disable RLS on all tables (app uses custom auth, not supabase auth)
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;

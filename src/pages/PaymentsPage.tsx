@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, getAllClients, getAllCarFees, getGeneralPayments, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient } from '../db/cloud'
-import { PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type CustomerPayment, type PaymentMethod } from '../types'
+import { getCars, getAllClients, getAllCarFees, getGeneralPayments, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient, upsertClient } from '../db/cloud'
+import { PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type Client, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 import { uploadFile } from '../utils/upload'
 import * as XLSX from 'xlsx'
@@ -36,7 +36,10 @@ export default function PaymentsPage() {
   const { user, canEdit } = useAuth()
   const [transactions, setTransactions] = useState<TransactionRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [allClients, setAllClients] = useState<Client[]>([])
+  const [allCars, setAllCars] = useState<Car[]>([])
   const [quickPayOpen, setQuickPayOpen] = useState(false)
+  const [quickPayClientId, setQuickPayClientId] = useState<string | null>(null)
   const [quickPayClientName, setQuickPayClientName] = useState('')
   const [quickPayCarId, setQuickPayCarId] = useState('')
   const [quickPayAmount, setQuickPayAmount] = useState(0)
@@ -44,6 +47,12 @@ export default function PaymentsPage() {
   const [quickPayMethod, setQuickPayMethod] = useState<PaymentMethod>('cash')
   const [quickPayReceipt, setQuickPayReceipt] = useState<File | null>(null)
   const [quickPayNotes, setQuickPayNotes] = useState('')
+  const [clientModalOpen, setClientModalOpen] = useState(false)
+  const [clientSearch, setClientSearch] = useState('')
+  const [clientAddMode, setClientAddMode] = useState(false)
+  const [newClientName, setNewClientName] = useState('')
+  const [newClientPhone, setNewClientPhone] = useState('')
+  const [addingClient, setAddingClient] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailClient, setDetailClient] = useState<ClientDetail | null>(null)
   const [editPayment, setEditPayment] = useState<CustomerPayment | null>(null)
@@ -67,6 +76,8 @@ export default function PaymentsPage() {
     const [cars, clients, allFees, allPayments, generalPayments] = await Promise.all([
       getCars(), getAllClients(), getAllCarFees(), getAllCustomerPayments(), getGeneralPayments(),
     ])
+    setAllCars(cars)
+    setAllClients(clients)
     const clientMap = new Map(clients.map(cl => [cl.id, cl]))
     const feeMap = new Map(allFees.map(f => [f.car_id, f]))
     const carMap = new Map(cars.map(c => [c.id, c]))
@@ -89,15 +100,14 @@ export default function PaymentsPage() {
     }
 
     const addPaymentRow = (payment: CustomerPayment) => {
+      const clientName = payment.client_id ? (clientMap.get(payment.client_id)?.name || '') : ''
       const car = payment.car_id ? carMap.get(payment.car_id) : null
-      const cl = car?.client_id ? clientMap.get(car.client_id) : null
-      const clientName = cl?.name || ''
       const paymentLabel = payment.car_id ? (car?.code ? `${t('payments.add')} (${car.code})` : t('payments.add')) : t('payments.general_settlement')
       rows.push({
         id: `pay-${payment.id}`,
         date: payment.payment_date,
         clientName,
-        clientId: cl?.id || null,
+        clientId: payment.client_id,
         carId: payment.car_id,
         carCode: car?.code || null,
         designation: paymentLabel,
@@ -157,15 +167,21 @@ export default function PaymentsPage() {
 
   useEffect(() => { loadData() }, [])
 
+  const quickPayClientCars = useMemo(() => {
+    if (!quickPayClientId) return []
+    return allCars.filter(c => c.client_id === quickPayClientId).map(c => ({ id: c.id, code: c.code }))
+  }, [quickPayClientId, allCars])
+
   const handleQuickPay = async () => {
-    if (!user || !quickPayClientName || quickPayAmount <= 0) return
+    if (!user || !quickPayClientId || quickPayAmount <= 0) return
     let receiptUrl: string | null = null
     const carId = quickPayCarId || null
     if (quickPayReceipt) {
-      const result = await uploadFile('car_attachments', carId ? `receipts/${carId}` : 'receipts/general', quickPayReceipt)
+      const result = await uploadFile('car_attachments', carId ? `receipts/${carId}` : `receipts/${quickPayClientId}`, quickPayReceipt)
       receiptUrl = result.storagePath
     }
     await createCustomerPayment({
+      client_id: quickPayClientId,
       car_id: carId,
       amount: quickPayAmount,
       payment_date: quickPayDate,
@@ -175,6 +191,7 @@ export default function PaymentsPage() {
       created_by: user.id,
     })
     setQuickPayOpen(false)
+    setQuickPayClientId(null)
     setQuickPayClientName('')
     setQuickPayCarId('')
     setQuickPayAmount(0)
@@ -185,10 +202,36 @@ export default function PaymentsPage() {
     loadData()
   }
 
-  const clientNames = [...new Set(transactions.filter(r => r.clientName).map(r => r.clientName))]
-  const clientCars = quickPayClientName
-    ? [...new Map(transactions.filter(r => r.clientName === quickPayClientName && r.carId).map(r => [r.carId, { id: r.carId!, code: r.carCode }])).values()]
-    : []
+  const pickClient = (cl: Client) => {
+    setQuickPayClientId(cl.id)
+    setQuickPayClientName(cl.name)
+    setQuickPayCarId('')
+    setClientModalOpen(false)
+  }
+
+  const openAddClient = () => {
+    setNewClientName('')
+    setNewClientPhone('')
+    setClientAddMode(true)
+  }
+
+  const handleAddClient = async () => {
+    if (!newClientName.trim()) return
+    setAddingClient(true)
+    try {
+      const cl = await upsertClient(newClientName.trim(), newClientPhone)
+      setClientAddMode(false)
+      setClientModalOpen(false)
+      setQuickPayClientId(cl.id)
+      setQuickPayClientName(cl.name)
+      setQuickPayCarId('')
+      setAllClients(prev => {
+        const exists = prev.find(c => c.id === cl.id)
+        return exists ? prev : [...prev, cl]
+      })
+    } catch { /* ignore */ }
+    setAddingClient(false)
+  }
 
   const openDetail = (row: TransactionRow) => {
     const clientRows = transactions.filter(r => r.clientId === row.clientId && (!row.clientId || r.carId === row.carId))
@@ -494,21 +537,25 @@ export default function PaymentsPage() {
                onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold">{t('payments.quick_add')}</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.client_name')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
-              <select value={quickPayClientName} onChange={e => { setQuickPayClientName(e.target.value); setQuickPayCarId('') }}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                <option value="">{t('app.select')}</option>
-                {clientNames.map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.client_name')} <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <input value={quickPayClientName} onChange={e => setQuickPayClientName(e.target.value)}
+                  onFocus={() => { setClientSearch(''); setClientModalOpen(true) }}
+                  readOnly={!!quickPayClientId}
+                  placeholder={t('app.select')}
+                  className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+                {quickPayClientId && (
+                  <button type="button" onClick={() => { setQuickPayClientId(null); setQuickPayClientName(''); setQuickPayCarId('') }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-sm">✕</button>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.name')}</label>
               <select value={quickPayCarId} onChange={e => setQuickPayCarId(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
                 <option value="">{t('payments.general_settlement')}</option>
-                {clientCars.map(c => (
+                {quickPayClientCars.map(c => (
                   <option key={c.id} value={c.id}>{c.code || c.id}</option>
                 ))}
               </select>
@@ -516,17 +563,17 @@ export default function PaymentsPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="number" value={quickPayAmount || ''} onChange={e => setQuickPayAmount(Number(e.target.value))} min={0}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.date')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <input type="date" value={quickPayDate} onChange={e => setQuickPayDate(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.method')}</label>
               <select value={quickPayMethod} onChange={e => setQuickPayMethod(e.target.value as PaymentMethod)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
                 {(['cash', 'bank_transfer', 'check', 'credit_card'] as PaymentMethod[]).map(m => (
                   <option key={m} value={m}>{t(PAYMENT_METHOD_LABELS[m])}</option>
                 ))}
@@ -540,16 +587,93 @@ export default function PaymentsPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.notes')}</label>
               <textarea value={quickPayNotes} onChange={e => setQuickPayNotes(e.target.value)}
-                rows={2} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" />
+                rows={2} className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" />
             </div>
             <div className="flex gap-3 pt-2">
               <button onClick={() => setQuickPayOpen(false)}
-                className="flex-1 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 dark:bg-gray-600 text-sm transition-colors">
+                className="flex-1 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm transition-colors">
                 {t('app.cancel')}
               </button>
-              <button onClick={handleQuickPay} disabled={!quickPayClientName || quickPayAmount <= 0}
+              <button onClick={handleQuickPay} disabled={!quickPayClientId || quickPayAmount <= 0}
                 className="flex-1 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors disabled:opacity-50">
                 {t('app.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {clientModalOpen && !clientAddMode && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setClientModalOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col"
+               onClick={e => e.stopPropagation()}>
+            <div className="p-5 sm:p-6 border-b dark:border-gray-700">
+              <h2 className="text-lg font-semibold mb-3">{t('car.request_client')}</h2>
+              <input value={clientSearch} onChange={e => setClientSearch(e.target.value)}
+                placeholder={t('clients.search')}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" autoFocus />
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {allClients.filter(c =>
+                !clientSearch ||
+                c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                c.phone.includes(clientSearch) ||
+                (c.code && c.code.includes(clientSearch))
+              ).length === 0 ? (
+                <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">{t('clients.no_data')}</div>
+              ) : (
+                allClients
+                  .filter(c =>
+                    !clientSearch ||
+                    c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                    c.phone.includes(clientSearch) ||
+                    (c.code && c.code.includes(clientSearch))
+                  )
+                  .map(cl => (
+                    <div key={cl.id} onClick={() => pickClient(cl)}
+                      className="grid grid-cols-[60px_1fr_120px] gap-3 items-center px-5 sm:px-6 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer border-b dark:border-gray-700/50 last:border-0">
+                      <span className="text-xs text-gray-400 dark:text-gray-500 font-mono text-left">{cl.code || '—'}</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{cl.name}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 ltr text-right" dir="ltr">{cl.phone || '—'}</span>
+                    </div>
+                  ))
+              )}
+            </div>
+            <div className="p-5 sm:p-6 pt-3 border-t dark:border-gray-700">
+              <button type="button" onClick={openAddClient}
+                className="w-full p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 text-sm transition-colors font-medium">
+                + {t('clients.add')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {clientModalOpen && clientAddMode && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => { setClientAddMode(false); setClientModalOpen(false) }}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('clients.add')}</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('clients.name')} <span className="text-red-500">*</span></label>
+              <input value={newClientName} onChange={e => setNewClientName(e.target.value)}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" autoFocus />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('clients.phone')}</label>
+              <input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)}
+                className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setClientAddMode(false)}
+                className="flex-1 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm transition-colors">
+                {t('app.cancel')}
+              </button>
+              <button type="button" onClick={handleAddClient} disabled={addingClient || !newClientName.trim()}
+                className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors disabled:opacity-50">
+                {addingClient ? t('app.loading') : t('app.save')}
               </button>
             </div>
           </div>

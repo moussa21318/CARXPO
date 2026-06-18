@@ -499,16 +499,16 @@ export async function getCustomerPayments(carId: string): Promise<CustomerPaymen
   } catch { return [] }
 }
 
-export async function getAllCustomerPayments(): Promise<(CustomerPayment & { car_name?: string })[]> {
+export async function getAllCustomerPayments(): Promise<(CustomerPayment & { client_name?: string; car_name?: string })[]> {
   try {
     const { data, error } = await getClient()
       .from('customer_payments')
-      .select('*, car:cars!customer_payments_car_id_fkey(name)')
+      .select('*, client:clients!customer_payments_client_id_fkey(name), car:cars!customer_payments_car_id_fkey(name, code)')
       .order('created_at', { ascending: false })
     if (error) return []
     return ((data as any[]) || []).map(p => {
-      const { car, ...rest } = p
-      return { ...rest, car_name: car?.name }
+      const { client, car, ...rest } = p
+      return { ...rest, client_name: client?.name, car_name: car?.name }
     })
   } catch { return [] }
 }
