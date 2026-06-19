@@ -156,7 +156,7 @@ export default function CarsList() {
         <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('app.no_data')}</div>
       ) : viewMode === 'table' ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[700px]">
+          <table className="w-full min-w-[850px]">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
                 <th className="p-3 w-10">
@@ -185,9 +185,9 @@ export default function CarsList() {
                       <span className="text-xs text-gray-400 dark:text-gray-500">{c.license_plate || c.serial_number?.slice(-8) || ''}</span>
                     </div>
                   </td>
-                  <td className="p-3 text-right text-sm font-mono text-gray-500 dark:text-gray-400">{clients.find(cl => cl.id === c.client_id)?.code || '—'}</td>
-                  <td className="p-3 text-gray-600 dark:text-gray-300">{c.model_year}</td>
-                  <td className="p-3">
+                  <td className="p-3 text-right text-gray-600 dark:text-gray-300">{clients.find(cl => cl.id === c.client_id)?.code || '—'}</td>
+                  <td className="p-3 text-right text-gray-600 dark:text-gray-300">{c.model_year}</td>
+                  <td className="p-3 text-right">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       c.current_stage === 'shipping' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300' :
                       c.current_stage === 'purchase' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' :
@@ -196,15 +196,15 @@ export default function CarsList() {
                       'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                     }`}>{t(STAGE_LABELS[c.current_stage])}</span>
                   </td>
-                  <td className="p-3 text-gray-600 dark:text-gray-300">{formatPrice(c.initial_price)}</td>
-                  <td className="p-3">
+                  <td className="p-3 text-right text-gray-600 dark:text-gray-300">{formatPrice(c.initial_price)}</td>
+                  <td className="p-3 text-right">
                     {c.confirmed ? (
                       <span className="text-green-600 dark:text-green-400 text-sm">{t('app.yes')}</span>
                     ) : (
                       <span className="text-gray-400 dark:text-gray-500 text-sm">{t('app.no')}</span>
                     )}
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 text-left">
                     <Link to={`/cars/${c.id}`} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 text-sm">{t('app.details')}</Link>
                   </td>
                 </tr>
