@@ -158,11 +158,11 @@ export const STAGE_ORDER: CarStage[] = ['request', 'deposit', 'purchase', 'shipp
 export const MODEL_YEARS = [2026, 2025, 2024, 2023, 2022, 2021]
 
 export const BRANDS: Record<string, string[]> = {
-  'كيا': ['MORNING', 'K3', 'K5', 'K8', 'SELTOS', 'SPORTAGE', 'SORENTO', 'NIRO', 'RAY', 'CARNIVAL'],
-  'هيونداي': ['TUCSON', 'KONA', 'SONATA', 'VENUE', 'SANTA FE', 'AVANTE', 'CASPER'],
-  'رينو/سامسونج': ['XM3 / ARKANA', 'KOLEOS', 'ALPINE', 'FILANTE'],
-  'جي أم كوريا': ['SPARK', 'TRAX', 'TRAILBLAZER'],
-  'KG M': ['TIVOLI', 'TORRES'],
+  'KIA': ['MORNING', 'K3', 'K5', 'K8', 'SELTOS', 'SPORTAGE', 'SORENTO', 'NIRO', 'RAY', 'CARNIVAL'],
+  'HYUNDAI': ['TUCSON', 'KONA', 'SONATA', 'VENUE', 'SANTA FE', 'AVANTE', 'CASPER'],
+  'RENAULT SAMSUNG': ['XM3 / ARKANA', 'KOLEOS', 'ALPINE', 'FILANTE'],
+  'GM KOREA': ['SPARK', 'TRAX', 'TRAILBLAZER'],
+  'KG MOBILITY': ['TIVOLI', 'TORRES'],
 }
 
 export const FEE_LABELS: (keyof CarFees)[] = ['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02']
