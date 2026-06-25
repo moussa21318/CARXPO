@@ -83,7 +83,7 @@ export default function PaymentsPage() {
     const carMap = new Map(cars.map(c => [c.id, c]))
     const rows: TransactionRow[] = []
 
-    const addFeeRow = (date: string, clientName: string, clientId: string | null, carId: string, carCode: string | null, designation: string, amount: number) => {
+    const addFeeRow = (date: string, clientName: string, clientId: string | null, carId: string, carCode: string | null, carName: string, designation: string, amount: number) => {
       if (amount <= 0) return
       rows.push({
         id: `fee-${carId}-${designation}-${date}`,
@@ -92,7 +92,7 @@ export default function PaymentsPage() {
         clientId,
         carId,
         carCode,
-        designation: carCode ? `${designation} (${carCode})` : designation,
+        designation: carCode ? `${designation} (${carName} - ${carCode})` : designation,
         debit: amount,
         credit: 0,
         isGeneral: false,
@@ -102,7 +102,7 @@ export default function PaymentsPage() {
     const addPaymentRow = (payment: CustomerPayment) => {
       const clientName = payment.client_id ? (clientMap.get(payment.client_id)?.name || '') : ''
       const car = payment.car_id ? carMap.get(payment.car_id) : null
-      const paymentLabel = payment.car_id ? (car?.code ? `${t('payments.add')} (${car.code})` : t('payments.add')) : t('payments.general_settlement')
+      const paymentLabel = payment.car_id ? (car?.code ? `${t('payments.add')} (${car.name} - ${car.code})` : car?.name || t('payments.add')) : t('payments.general_settlement')
       rows.push({
         id: `pay-${payment.id}`,
         date: payment.payment_date,
@@ -149,7 +149,7 @@ export default function PaymentsPage() {
         if (amount <= 0) continue
         const dateKey = feeDateKeys[key]
         const date = (fees as any)[dateKey] as string | null
-        addFeeRow(date || new Date().toISOString().slice(0, 10), cl.name, cl.id, car.id, car.code, t(feeKeyLabels[key] || key), amount)
+        addFeeRow(date || new Date().toISOString().slice(0, 10), cl.name, cl.id, car.id, car.code, car.name, t(feeKeyLabels[key] || key), amount)
       }
     }
 

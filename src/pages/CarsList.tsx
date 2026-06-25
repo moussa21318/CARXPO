@@ -156,7 +156,7 @@ export default function CarsList() {
         <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('app.no_data')}</div>
       ) : viewMode === 'table' ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[850px]">
+          <table className="w-full min-w-[850px]" dir="rtl">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
                 <th className="p-3 w-10">
@@ -169,7 +169,7 @@ export default function CarsList() {
                 <th className="text-center p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.current_stage')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.initial_price')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.confirmed')}</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.details')}</th>
+                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.details')}</th>
               </tr>
             </thead>
             <tbody>
@@ -204,7 +204,7 @@ export default function CarsList() {
                       <span className="text-gray-400 dark:text-gray-500 text-sm">{t('app.no')}</span>
                     )}
                   </td>
-                  <td className="p-3 text-left">
+                  <td className="p-3 text-right">
                     <Link to={`/cars/${c.id}`} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 text-sm">{t('app.details')}</Link>
                   </td>
                 </tr>

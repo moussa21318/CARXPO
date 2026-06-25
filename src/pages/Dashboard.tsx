@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { getCars, getChangeLogs } from '../db/cloud'
+import { getCars, getChangeLogsWithUsers } from '../db/cloud'
 import { STAGE_ORDER, STAGE_LABELS, type Car, type ChangeLog } from '../types'
 
 export default function Dashboard() {
@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [searchVal, setSearchVal] = useState('')
 
   useEffect(() => {
-    Promise.all([getCars(), getChangeLogs(50)]).then(([c, l]) => {
+    Promise.all([getCars(), getChangeLogsWithUsers(50)]).then(([c, l]) => {
       setCars(c)
       setLogs(l)
       setLoading(false)
@@ -80,10 +80,16 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-3">
             {logs.map(l => (
-              <div key={l.id} className="flex items-center gap-3 text-sm border-b dark:border-gray-700 pb-2 last:border-0">
-                <span className="text-gray-500 dark:text-gray-400">{new Date(l.timestamp).toLocaleDateString()}</span>
-                <span className="font-medium">{t(`activity.${l.operation}`)}</span>
+              <div key={l.id} className="flex items-center gap-3 text-sm border-b dark:border-gray-700 pb-2 last:border-0 flex-wrap">
+                <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">{new Date(l.timestamp).toLocaleString()}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{(l as any).user_name}</span>
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  l.operation === 'insert' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300' :
+                  l.operation === 'update' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' :
+                  'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                }`}>{t(`activity.${l.operation}`)}</span>
                 <span className="text-gray-600 dark:text-gray-300">{l.table_name}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">#{l.record_id?.slice(0, 8)}</span>
               </div>
             ))}
           </div>

@@ -240,7 +240,7 @@ export default function CarDetails() {
   }
 
   const handleAddPayment = async () => {
-    if (!id || !user || paymentAmount <= 0) return
+    if (!id || !user || !car || paymentAmount <= 0) return
     let receiptUrl: string | null = null
     if (paymentReceipt) {
       const result = await uploadFile('car_attachments', `receipts/${id}`, paymentReceipt)
@@ -248,6 +248,7 @@ export default function CarDetails() {
     }
     await createCustomerPayment({
       car_id: id,
+      client_id: car.client_id,
       amount: paymentAmount,
       payment_date: paymentDate,
       payment_method: paymentMethod,
