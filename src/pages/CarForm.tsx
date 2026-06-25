@@ -198,13 +198,6 @@ export default function CarForm() {
             <input value={trim} onChange={e => setTrim(e.target.value)}
               className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
-          <input type="hidden" value={name} />
-          {code && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.code')}</label>
-              <div className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm font-mono bg-gray-100 dark:bg-gray-700 select-all">{code}</div>
-            </div>
-          )}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.model_year')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
           <select value={modelYear} onChange={e => setModelYear(Number(e.target.value))}
@@ -212,6 +205,13 @@ export default function CarForm() {
             {MODEL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
+          {code && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.code')}</label>
+              <div className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg text-sm font-mono bg-gray-100 dark:bg-gray-700 select-all">{code}</div>
+            </div>
+          )}
+          <input type="hidden" value={name} />
         {isEdit && (
           <>
             <div>
