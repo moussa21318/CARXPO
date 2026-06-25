@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
@@ -24,6 +24,8 @@ export default function CarsList() {
   const [manageDeleteOpen, setManageDeleteOpen] = useState(false)
   const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [sortKey, setSortKey] = useState<string>('name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const stageFilter = (searchParams.get('stage') as CarStage) || undefined
   const searchFilter = searchParams.get('search') || undefined
   const clientFilter = searchParams.get('client') || undefined
@@ -87,6 +89,39 @@ export default function CarsList() {
     loadDeleteRequests()
     loadCars()
   }
+
+  const handleSort = (key: string) => {
+    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc')
+    setSortKey(key)
+  }
+
+  const carColDefs = [
+    { key: 'name', labelKey: 'car.name', sortable: true },
+    { key: 'client_code', labelKey: 'clients.code', sortable: true },
+    { key: 'model_year', labelKey: 'car.model_year', sortable: true },
+    { key: 'current_stage', labelKey: 'car.current_stage', sortable: true },
+    { key: 'initial_price', labelKey: 'car.initial_price', sortable: true },
+    { key: 'confirmed', labelKey: 'car.confirmed', sortable: true },
+    { key: 'details', labelKey: 'app.details', sortable: false },
+  ].map(c => ({ ...c, label: t(c.labelKey) }))
+
+  const sortedCars = useMemo(() => {
+    if (!sortKey) return cars
+    return [...cars].sort((a, b) => {
+      let cmp = 0
+      if (sortKey === 'name') cmp = a.name.localeCompare(b.name)
+      else if (sortKey === 'client_code') {
+        const codeA = clients.find(cl => cl.id === a.client_id)?.code || ''
+        const codeB = clients.find(cl => cl.id === b.client_id)?.code || ''
+        cmp = codeA.localeCompare(codeB)
+      }
+      else if (sortKey === 'model_year') cmp = String(a.model_year || '').localeCompare(String(b.model_year || ''))
+      else if (sortKey === 'current_stage') cmp = a.current_stage.localeCompare(b.current_stage)
+      else if (sortKey === 'initial_price') cmp = a.initial_price - b.initial_price
+      else if (sortKey === 'confirmed') cmp = (a.confirmed ? 1 : 0) - (b.confirmed ? 1 : 0)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [cars, clients, sortKey, sortDir])
 
   return (
     <div>
@@ -163,17 +198,18 @@ export default function CarsList() {
                   <input type="checkbox" checked={selected.size === cars.length && cars.length > 0}
                     onChange={toggleAll} className="w-4 h-4" />
                 </th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.name')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('clients.code')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.model_year')}</th>
-                <th className="text-center p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.current_stage')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.initial_price')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.confirmed')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.details')}</th>
+                {carColDefs.map(c => (
+                  <th key={c.key}
+                    onClick={() => c.sortable && handleSort(c.key)}
+                    aria-sort={sortKey === c.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                    className={`p-3 text-sm font-medium transition-colors ${c.sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none' : ''} ${sortKey === c.key ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'} ${c.key === 'current_stage' ? 'text-center' : 'text-right'}`}>
+                    {c.label}{sortKey === c.key && (sortDir === 'asc' ? ' ▲' : ' ▼')}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {cars.map(c => (
+              {sortedCars.map(c => (
                 <tr key={c.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50">
                   <td className="p-3">
                     <input type="checkbox" checked={selected.has(c.id)}

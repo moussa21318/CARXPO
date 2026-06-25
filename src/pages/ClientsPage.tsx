@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getAllClients, upsertClient, updateClient, deleteClient, getCars } from '../db/cloud'
@@ -15,6 +15,8 @@ export default function ClientsPage() {
   const [modalName, setModalName] = useState('')
   const [modalPhone, setModalPhone] = useState('')
   const [saving, setSaving] = useState(false)
+  const [sortKey, setSortKey] = useState<string>('code')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   const loadClients = async () => {
     const [cl, cars] = await Promise.all([getAllClients(), getCars()])
@@ -57,10 +59,38 @@ export default function ClientsPage() {
     await loadClients()
   }
 
+  const handleSort = (key: string) => {
+    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc')
+    setSortKey(key)
+  }
+
   const filtered = clients.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.phone.includes(search) || (c.code && c.code.includes(search))
   )
+
+  const colDefs = [
+    { key: 'code', labelKey: 'clients.code', sortable: true },
+    { key: 'name', labelKey: 'clients.name', sortable: true },
+    { key: 'phone', labelKey: 'clients.phone', sortable: true },
+    { key: 'created_at', labelKey: 'clients.created_at', sortable: true },
+    { key: 'cars_count', labelKey: 'clients.cars_count', sortable: true },
+    { key: 'edit', labelKey: 'app.edit', sortable: false },
+  ]
+  const displayCols = colDefs.map(c => ({ ...c, label: t(c.labelKey) }))
+
+  const sortedClients = useMemo(() => {
+    if (!sortKey) return filtered
+    return [...filtered].sort((a, b) => {
+      let cmp = 0
+      if (sortKey === 'code') cmp = (a.code || '').localeCompare(b.code || '')
+      else if (sortKey === 'name') cmp = a.name.localeCompare(b.name)
+      else if (sortKey === 'phone') cmp = (a.phone || '').localeCompare(b.phone || '')
+      else if (sortKey === 'created_at') cmp = a.created_at.localeCompare(b.created_at)
+      else if (sortKey === 'cars_count') cmp = (a.carCount || 0) - (b.carCount || 0)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [filtered, sortKey, sortDir])
 
   if (loading) return <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('app.loading')}</div>
 
@@ -85,16 +115,18 @@ export default function ClientsPage() {
           <table className="w-full min-w-[600px]">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('clients.code')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('clients.name')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('clients.phone')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('clients.created_at')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('clients.cars_count')}</th>
-                <th className="text-center p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.edit')}</th>
+                {displayCols.map(c => (
+                  <th key={c.key}
+                    onClick={() => c.sortable && handleSort(c.key)}
+                    aria-sort={sortKey === c.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                    className={`p-3 text-sm font-medium transition-colors ${c.sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none' : ''} ${sortKey === c.key ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'} ${c.key === 'edit' ? 'text-center' : 'text-right'}`}>
+                    {c.label}{sortKey === c.key && (sortDir === 'asc' ? ' ▲' : ' ▼')}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(cl => (
+              {sortedClients.map(cl => (
                 <tr key={cl.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="p-3 text-right text-sm font-mono text-gray-600 dark:text-gray-300">{cl.code || '—'}</td>
                   <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">{cl.name}</td>
