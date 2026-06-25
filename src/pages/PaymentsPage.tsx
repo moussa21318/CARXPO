@@ -14,6 +14,8 @@ interface TransactionRow {
   clientId: string | null
   carId: string | null
   carCode: string | null
+  carName: string | null
+  designationKey: string
   designation: string
   debit: number
   credit: number
@@ -83,16 +85,18 @@ export default function PaymentsPage() {
     const carMap = new Map(cars.map(c => [c.id, c]))
     const rows: TransactionRow[] = []
 
-    const addFeeRow = (date: string, clientName: string, clientId: string | null, carId: string, carCode: string | null, carName: string, designation: string, amount: number) => {
+    const addFeeRow = (date: string, clientName: string, clientId: string | null, carId: string, carCode: string | null, carName: string, designationKey: string, amount: number) => {
       if (amount <= 0) return
       rows.push({
-        id: `fee-${carId}-${designation}-${date}`,
+        id: `fee-${carId}-${designationKey}-${date}`,
         date: date || new Date().toISOString().slice(0, 10),
         clientName,
         clientId,
         carId,
         carCode,
-        designation: carCode ? `${designation} (${carName} - ${carCode})` : designation,
+        carName,
+        designationKey,
+        designation: '',
         debit: amount,
         credit: 0,
         isGeneral: false,
@@ -102,7 +106,7 @@ export default function PaymentsPage() {
     const addPaymentRow = (payment: CustomerPayment) => {
       const clientName = payment.client_id ? (clientMap.get(payment.client_id)?.name || '') : ''
       const car = payment.car_id ? carMap.get(payment.car_id) : null
-      const paymentLabel = payment.car_id ? (car?.code ? `${t('payments.add')} (${car.name} - ${car.code})` : car?.name || t('payments.add')) : t('payments.general_settlement')
+      const isGeneral = !payment.car_id
       rows.push({
         id: `pay-${payment.id}`,
         date: payment.payment_date,
@@ -110,13 +114,15 @@ export default function PaymentsPage() {
         clientId: payment.client_id,
         carId: payment.car_id,
         carCode: car?.code || null,
-        designation: paymentLabel,
+        carName: car?.name || null,
+        designationKey: isGeneral ? 'payments.general_settlement' : 'payments.add',
+        designation: '',
         debit: payment.amount < 0 ? -payment.amount : 0,
         credit: payment.amount > 0 ? payment.amount : 0,
         paymentMethod: payment.payment_method,
         paymentNotes: payment.notes,
         paymentReceipt: payment.receipt_url || undefined,
-        isGeneral: !payment.car_id,
+        isGeneral,
         sourcePayment: payment,
       })
     }
@@ -149,7 +155,7 @@ export default function PaymentsPage() {
         if (amount <= 0) continue
         const dateKey = feeDateKeys[key]
         const date = (fees as any)[dateKey] as string | null
-        addFeeRow(date || new Date().toISOString().slice(0, 10), cl.name, cl.id, car.id, car.code, car.name, t(feeKeyLabels[key] || key), amount)
+        addFeeRow(date || new Date().toISOString().slice(0, 10), cl.name, cl.id, car.id, car.code, car.name, feeKeyLabels[key] || key, amount)
       }
     }
 
@@ -278,8 +284,7 @@ export default function PaymentsPage() {
   const filteredTransactions = useMemo(() => {
     return transactions.filter(r => {
       if (filterClient && !r.clientName.toLowerCase().includes(filterClient.toLowerCase())) return false
-      if (filterCar && r.carCode && !r.carCode.toLowerCase().includes(filterCar.toLowerCase())) return false
-      if (filterCar && !r.carCode && !r.designation.toLowerCase().includes(filterCar.toLowerCase())) return false
+      if (filterCar && !r.carCode?.toLowerCase().includes(filterCar.toLowerCase()) && !r.carName?.toLowerCase().includes(filterCar.toLowerCase())) return false
       if (filterStatus === 'in_debt' && r.debit <= 0) return false
       if (filterStatus === 'settled' && r.credit <= 0) return false
       if (filterStatus === 'general' && !r.isGeneral) return false
@@ -293,9 +298,16 @@ export default function PaymentsPage() {
     let balance = 0
     return filteredTransactions.map(r => {
       balance = balance - r.debit + r.credit
-      return { ...r, avoir: balance }
+      const translated = t(r.designationKey)
+      return {
+        ...r,
+        designation: r.carCode
+          ? `${translated} (${r.carName} - ${r.carCode})`
+          : translated,
+        avoir: balance,
+      }
     })
-  }, [filteredTransactions])
+  }, [filteredTransactions, i18n.language])
 
   const isRtl = i18n.language === 'ar'
 
