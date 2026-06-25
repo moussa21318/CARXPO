@@ -69,6 +69,8 @@ export default function PaymentsPage() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
+  const [sortKey, setSortKey] = useState<string>('date')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   const [exportDateFrom, setExportDateFrom] = useState('')
   const [exportDateTo, setExportDateTo] = useState('')
@@ -281,6 +283,11 @@ export default function PaymentsPage() {
     }
   }
 
+  const handleSort = (key: string) => {
+    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc')
+    setSortKey(key)
+  }
+
   const filteredTransactions = useMemo(() => {
     return transactions.filter(r => {
       if (filterClient && !r.clientName.toLowerCase().includes(filterClient.toLowerCase())) return false
@@ -309,17 +316,31 @@ export default function PaymentsPage() {
     })
   }, [filteredTransactions, i18n.language])
 
+  const sortedRows = useMemo(() => {
+    if (!sortKey) return rowsWithBalance
+    return [...rowsWithBalance].sort((a, b) => {
+      let cmp = 0
+      if (sortKey === 'date') cmp = a.date.localeCompare(b.date)
+      else if (sortKey === 'designation') cmp = a.designation.localeCompare(b.designation)
+      else if (sortKey === 'client') cmp = (a.clientName || '').localeCompare(b.clientName || '')
+      else if (sortKey === 'debit') cmp = a.debit - b.debit
+      else if (sortKey === 'credit') cmp = a.credit - b.credit
+      else if (sortKey === 'avoir') cmp = a.avoir - b.avoir
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [rowsWithBalance, sortKey, sortDir])
+
   const isRtl = i18n.language === 'ar'
 
   const colDefs = [
-    { key: 'date', label: t('payments.date') },
-    { key: 'designation', label: t('payments.designation') },
-    { key: 'client', label: t('car.request_client') },
-    { key: 'debit', label: t('payments.debit') },
-    { key: 'credit', label: t('payments.credit') },
-    { key: 'avoir', label: t('payments.avoir') },
+    { key: 'date', labelKey: 'payments.date', sortable: true },
+    { key: 'designation', labelKey: 'payments.designation', sortable: true },
+    { key: 'client', labelKey: 'car.request_client', sortable: true },
+    { key: 'debit', labelKey: 'payments.debit', sortable: true },
+    { key: 'credit', labelKey: 'payments.credit', sortable: true },
+    { key: 'avoir', labelKey: 'payments.avoir', sortable: true },
   ]
-  const displayCols = isRtl ? [...colDefs].reverse() : colDefs
+  const displayCols = (isRtl ? [...colDefs].reverse() : colDefs).map(c => ({ ...c, label: t(c.labelKey) }))
 
   const detailCols = isRtl
     ? [
@@ -506,7 +527,7 @@ export default function PaymentsPage() {
           className="min-w-[140px] p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
       </div>
 
-      {rowsWithBalance.length === 0 ? (
+      {sortedRows.length === 0 ? (
         <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('app.no_data')}</div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-x-auto">
@@ -514,12 +535,17 @@ export default function PaymentsPage() {
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
                 {displayCols.map(c => (
-                  <th key={c.key} className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{c.label}</th>
+                  <th key={c.key}
+                    onClick={() => c.sortable && handleSort(c.key)}
+                    aria-sort={sortKey === c.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                    className={`text-right p-3 text-sm font-medium transition-colors ${c.sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none' : ''} ${sortKey === c.key ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}`}>
+                    {c.label}{sortKey === c.key && (sortDir === 'asc' ? ' ▲' : ' ▼')}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rowsWithBalance.map(r => (
+              {sortedRows.map(r => (
                 <tr key={r.id} onClick={() => openDetail(r)}
                   className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
                   {displayCols.map(c => {
