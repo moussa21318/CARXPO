@@ -166,7 +166,7 @@ export default function CarsList() {
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.name')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('clients.code')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.model_year')}</th>
-                <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.current_stage')}</th>
+                <th className="text-center p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.current_stage')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.initial_price')}</th>
                 <th className="text-right p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('car.confirmed')}</th>
                 <th className="text-left p-3 text-sm font-medium text-gray-600 dark:text-gray-300">{t('app.details')}</th>
@@ -187,7 +187,7 @@ export default function CarsList() {
                   </td>
                   <td className="p-3 text-right text-gray-600 dark:text-gray-300">{clients.find(cl => cl.id === c.client_id)?.code || '—'}</td>
                   <td className="p-3 text-right text-gray-600 dark:text-gray-300">{c.model_year}</td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       c.current_stage === 'shipping' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300' :
                       c.current_stage === 'purchase' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' :
