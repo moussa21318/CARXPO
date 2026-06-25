@@ -481,6 +481,17 @@ export default function PaymentsPage() {
     printWin.document.close()
   }
 
+  const filteredClients = useMemo(() => {
+    return [...allClients]
+      .filter(c =>
+        !clientSearch ||
+        c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+        c.phone.includes(clientSearch) ||
+        (c.code && c.code.includes(clientSearch))
+      )
+      .sort((a, b) => Number(a.code) - Number(b.code))
+  }, [allClients, clientSearch])
+
   if (loading) return <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('app.loading')}</div>
 
   return (
@@ -650,22 +661,10 @@ export default function PaymentsPage() {
                 className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" autoFocus />
             </div>
             <div className="flex-1 overflow-y-auto">
-              {allClients.filter(c =>
-                !clientSearch ||
-                c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                c.phone.includes(clientSearch) ||
-                (c.code && c.code.includes(clientSearch))
-              ).length === 0 ? (
+              {filteredClients.length === 0 ? (
                 <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">{t('clients.no_data')}</div>
               ) : (
-                allClients
-                  .filter(c =>
-                    !clientSearch ||
-                    c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                    c.phone.includes(clientSearch) ||
-                    (c.code && c.code.includes(clientSearch))
-                  )
-                  .map(cl => (
+                filteredClients.map(cl => (
                     <div key={cl.id} onClick={() => pickClient(cl)}
                       className="grid grid-cols-[60px_1fr_120px] gap-3 items-center px-5 sm:px-6 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer border-b dark:border-gray-700/50 last:border-0">
                       <span className="text-xs text-gray-400 dark:text-gray-500 font-mono text-left">{cl.code || '—'}</span>
