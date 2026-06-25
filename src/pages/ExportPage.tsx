@@ -16,6 +16,9 @@ interface ColumnDef {
 const GROUPS: ColumnDef[] = [
   // Car fields
   { key: 'name', labelKey: 'car.name', group: 'car', groupLabelKey: 'export.group_car', getValue: (c) => c?.name },
+  { key: 'brand', labelKey: 'car.brand', group: 'car', groupLabelKey: 'export.group_car', getValue: (c) => c?.brand },
+  { key: 'model', labelKey: 'car.model', group: 'car', groupLabelKey: 'export.group_car', getValue: (c) => c?.model },
+  { key: 'trim', labelKey: 'car.trim', group: 'car', groupLabelKey: 'export.group_car', getValue: (c) => c?.trim },
   { key: 'model_year', labelKey: 'car.model_year', group: 'car', groupLabelKey: 'export.group_car', getValue: (c) => c?.model_year },
   { key: 'serial_number', labelKey: 'car.serial_number', group: 'car', groupLabelKey: 'export.group_car', getValue: (c) => c?.serial_number },
   { key: 'license_plate', labelKey: 'car.license_plate', group: 'car', groupLabelKey: 'export.group_car', getValue: (c) => c?.license_plate },

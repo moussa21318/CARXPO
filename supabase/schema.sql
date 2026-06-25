@@ -54,6 +54,9 @@ CREATE TABLE customers (
 CREATE TABLE cars (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
+  brand TEXT,
+  model TEXT,
+  trim TEXT,
   model_year INTEGER NOT NULL,
   serial_number TEXT,
   license_plate TEXT,

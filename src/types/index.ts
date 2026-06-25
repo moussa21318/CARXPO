@@ -29,6 +29,9 @@ export interface Client {
 export interface Car {
   id: string
   name: string
+  brand: string | null
+  model: string | null
+  trim: string | null
   model_year: number
   serial_number: string | null
   license_plate: string | null
@@ -153,6 +156,14 @@ export const STAGE_LABELS: Record<CarStage, string> = {
 export const STAGE_ORDER: CarStage[] = ['request', 'deposit', 'purchase', 'shipping_prep', 'shipping']
 
 export const MODEL_YEARS = [2026, 2025, 2024, 2023, 2022, 2021]
+
+export const BRANDS: Record<string, string[]> = {
+  'كيا': ['MORNING', 'K3', 'K5', 'K8', 'SELTOS', 'SPORTAGE', 'SORENTO', 'NIRO', 'RAY', 'CARNIVAL'],
+  'هيونداي': ['TUCSON', 'KONA', 'SONATA', 'VENUE', 'SANTA FE', 'AVANTE', 'CASPER'],
+  'رينو/سامسونج': ['XM3 / ARKANA', 'KOLEOS', 'ALPINE', 'FILANTE'],
+  'جي أم كوريا': ['SPARK', 'TRAX', 'TRAILBLAZER'],
+  'KG M': ['TIVOLI', 'TORRES'],
+}
 
 export const FEE_LABELS: (keyof CarFees)[] = ['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02']
 

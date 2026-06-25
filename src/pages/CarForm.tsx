@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { createCar, getCar, updateCar, getClientById, getAllClients, upsertClient, getLastCarCode, generateNextCode } from '../db/cloud'
-import { MODEL_YEARS, STAGE_ORDER, STAGE_LABELS, type Client } from '../types'
+import { MODEL_YEARS, STAGE_ORDER, STAGE_LABELS, BRANDS, type Client } from '../types'
 
 export default function CarForm() {
   const { t } = useTranslation()
@@ -13,6 +13,9 @@ export default function CarForm() {
   const isEdit = !!id
 
   const [name, setName] = useState('')
+  const [brand, setBrand] = useState('')
+  const [model, setModel] = useState('')
+  const [trim, setTrim] = useState('')
   const [modelYear, setModelYear] = useState(MODEL_YEARS[0])
   const [serialNumber, setSerialNumber] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
@@ -44,6 +47,9 @@ export default function CarForm() {
     getCar(id).then(car => {
       if (!car) return
       setName(car.name)
+      setBrand(car.brand || '')
+      setModel(car.model || '')
+      setTrim(car.trim || '')
       setModelYear(car.model_year)
       setSerialNumber(car.serial_number || '')
       setLicensePlate(car.license_plate || '')
@@ -119,7 +125,8 @@ export default function CarForm() {
     try {
       if (isEdit && id) {
         const payload: any = {
-          name, model_year: modelYear, serial_number: serialNumber || null,
+          name, brand: brand || null, model: model || null, trim: trim || null,
+          model_year: modelYear, serial_number: serialNumber || null,
           license_plate: licensePlate || null, seller_phone: sellerPhone,
           initial_price: initialPrice, notes, updated_by: user.id,
         }
@@ -133,7 +140,8 @@ export default function CarForm() {
         }
       } else {
         const car = await createCar({
-          name, model_year: modelYear, code, notes, created_by: user.id, updated_by: user.id,
+          name, brand: brand || null, model: model || null, trim: trim || null,
+          model_year: modelYear, code, notes, created_by: user.id, updated_by: user.id,
         })
         if (clientId) {
           await updateCar(car.id, { client_id: clientId })
@@ -152,6 +160,11 @@ export default function CarForm() {
     }
   }
 
+  useEffect(() => {
+    if (!brand && !model) return
+    setName(brand && model ? `${brand} ${model}` : brand || model || '')
+  }, [brand, model])
+
   const filteredClients = allClients.filter(c =>
     !clientSearch ||
     c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
@@ -165,10 +178,27 @@ export default function CarForm() {
       <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-4">
         {error && <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-300">{error}</div>}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.name')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
-            <input value={name} onChange={e => setName(e.target.value)} required
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.brand')} <span className="text-red-500">*</span></label>
+            <select value={brand} onChange={e => { setBrand(e.target.value); setModel('') }} required
+              className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="">{t('car.select_brand')}</option>
+              {Object.keys(BRANDS).map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.model')} <span className="text-red-500">*</span></label>
+            <select value={model} onChange={e => setModel(e.target.value)} required disabled={!brand}
+              className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50">
+              <option value="">{t('car.select_model')}</option>
+              {brand && BRANDS[brand].map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.trim')}</label>
+            <input value={trim} onChange={e => setTrim(e.target.value)}
               className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
+          <input type="hidden" value={name} />
           {code && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.code')}</label>

@@ -12,7 +12,7 @@ import {
   getClient,
 } from '../db/cloud'
 import { uploadFile } from '../utils/upload'
-import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, PAYMENT_METHOD_LABELS, type Car, type CarFees, type CarStageLog, type Client, type Customer, type CarAttachment, type CarStage, type DeleteRequest, type CustomerPayment, type PaymentMethod } from '../types'
+import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, PAYMENT_METHOD_LABELS, BRANDS, type Car, type CarFees, type CarStageLog, type Client, type Customer, type CarAttachment, type CarStage, type DeleteRequest, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 
 export default function CarDetails() {
@@ -65,6 +65,9 @@ export default function CarDetails() {
   const [modalLp, setModalLp] = useState('')
   const [modalMy, setModalMy] = useState(0)
   const [modalPrice, setModalPrice] = useState(0)
+  const [modalBrand, setModalBrand] = useState('')
+  const [modalModel, setModalModel] = useState('')
+  const [modalTrim, setModalTrim] = useState('')
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -92,12 +95,19 @@ export default function CarDetails() {
     setModalLp(car.license_plate || '')
     setModalMy(car.model_year)
     setModalPrice(car.initial_price)
+    setModalBrand(car.brand || '')
+    setModalModel(car.model || '')
+    setModalTrim(car.trim || '')
     setConfirmOpen(true)
   }
 
   const handleConfirmSave = async () => {
     if (!id || !user || !car) return
     await updateCar(id, {
+      name: `${modalBrand} ${modalModel}`,
+      brand: modalBrand || null,
+      model: modalModel || null,
+      trim: modalTrim || null,
       license_plate: modalLp || null,
       model_year: modalMy,
       initial_price: modalPrice,
@@ -775,6 +785,30 @@ export default function CarDetails() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.license_plate')}</label>
               <input value={modalLp} onChange={e => setModalLp(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.brand')} <span className="text-red-500">*</span></label>
+              <select value={modalBrand} onChange={e => { setModalBrand(e.target.value); setModalModel('') }} required
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                <option value="">{t('car.select_brand')}</option>
+                {Object.keys(BRANDS).map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.model')} <span className="text-red-500">*</span></label>
+              <select value={modalModel} onChange={e => setModalModel(e.target.value)} required disabled={!modalBrand}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm disabled:opacity-50">
+                <option value="">{t('car.select_model')}</option>
+                {modalBrand && BRANDS[modalBrand].map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.trim')}</label>
+              <input value={modalTrim} onChange={e => setModalTrim(e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
 
