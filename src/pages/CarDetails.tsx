@@ -12,7 +12,8 @@ import {
   getClient,
 } from '../db/cloud'
 import { uploadFile } from '../utils/upload'
-import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, PAYMENT_METHOD_LABELS, BRANDS, type Car, type CarFees, type CarStageLog, type Client, type Customer, type CarAttachment, type CarStage, type DeleteRequest, type CustomerPayment, type PaymentMethod } from '../types'
+import { STAGE_ORDER, STAGE_LABELS, MODEL_YEARS, PAYMENT_METHOD_LABELS, type Car, type CarFees, type CarStageLog, type Client, type Customer, type CarAttachment, type CarStage, type DeleteRequest, type CustomerPayment, type PaymentMethod, type Brand } from '../types'
+import { getBrands, getModels } from '../db/cloud'
 import { formatPrice } from '../utils/format'
 
 export default function CarDetails() {
@@ -50,6 +51,8 @@ export default function CarDetails() {
   const [deleteRequestReason, setDeleteRequestReason] = useState('')
   const [deleteRequests, setDeleteRequests] = useState<DeleteRequest[]>([])
   const [payments, setPayments] = useState<CustomerPayment[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [brandModels, setBrandModels] = useState<Record<string, string[]>>({})
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paymentAmount, setPaymentAmount] = useState(0)
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
@@ -89,6 +92,15 @@ export default function CarDetails() {
   }, [id])
 
   useEffect(() => { loadData() }, [id])
+  useEffect(() => { getBrands().then(setBrands).catch(() => {}) }, [])
+
+  useEffect(() => {
+    if (!modalBrand) return
+    const brandObj = brands.find(b => b.name === modalBrand)
+    if (!brandObj) return
+    if (brandModels[modalBrand]) return
+    getModels(brandObj.id).then(ms => setBrandModels(prev => ({ ...prev, [modalBrand]: ms.map(m => m.name) }))).catch(() => {})
+  }, [modalBrand, brands])
 
   const handleOpenConfirm = () => {
     if (!car) return
@@ -98,6 +110,10 @@ export default function CarDetails() {
     setModalBrand(car.brand || '')
     setModalModel(car.model || '')
     setModalTrim(car.trim || '')
+    if (car.brand) {
+      const brandObj = brands.find(b => b.name === car.brand)
+      if (brandObj) getModels(brandObj.id).then(ms => setBrandModels(prev => ({ ...prev, [car.brand!]: ms.map(m => m.name) })))
+    }
     setConfirmOpen(true)
   }
 
@@ -793,7 +809,7 @@ export default function CarDetails() {
               <select value={modalBrand} onChange={e => { setModalBrand(e.target.value); setModalModel('') }} required
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
                 <option value="">{t('car.select_brand')}</option>
-                {Object.keys(BRANDS).map(b => <option key={b} value={b}>{b}</option>)}
+                {brands.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
               </select>
             </div>
 
@@ -802,7 +818,7 @@ export default function CarDetails() {
               <select value={modalModel} onChange={e => setModalModel(e.target.value)} required disabled={!modalBrand}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm disabled:opacity-50">
                 <option value="">{t('car.select_model')}</option>
-                {modalBrand && BRANDS[modalBrand].map(m => <option key={m} value={m}>{m}</option>)}
+                {modalBrand && brandModels[modalBrand]?.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
 

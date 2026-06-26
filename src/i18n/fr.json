@@ -23,6 +23,7 @@
     "users": "Utilisateurs",
     "notifications": "Notifications",
     "activity_log": "Journal d'activité",
+    "brands": "Marques et Modèles",
     "export": "Exporter Excel",
     "logout": "Déconnexion",
     "view_table": "Tableau",
@@ -134,6 +135,17 @@
     "no_delete_requests": "Aucune demande de suppression",
     "prev_page": "Précédent",
     "next_page": "Suivant"
+  },
+  "brands": {
+    "title": "Marques et Modèles",
+    "add_brand": "Ajouter une marque",
+    "edit_brand": "Modifier la marque",
+    "brand_name": "Nom de la marque",
+    "delete_confirm": "Supprimer la marque",
+    "models": "Modèles",
+    "add_model": "Ajouter un modèle",
+    "model_name": "Nom du modèle",
+    "no_models": "Aucun modèle"
   },
   "users": {
     "title": "Gestion des utilisateurs",

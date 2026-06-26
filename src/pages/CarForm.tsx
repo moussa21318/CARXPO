@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { createCar, getCar, updateCar, getClientById, getAllClients, upsertClient, getLastCarCode, generateNextCode } from '../db/cloud'
-import { MODEL_YEARS, STAGE_ORDER, STAGE_LABELS, BRANDS, type Client } from '../types'
+import { createCar, getCar, updateCar, getClientById, getAllClients, upsertClient, getLastCarCode, generateNextCode, getBrands, getModels } from '../db/cloud'
+import { MODEL_YEARS, STAGE_ORDER, STAGE_LABELS, type Client, type Brand } from '../types'
 
 export default function CarForm() {
   const { t } = useTranslation()
@@ -31,6 +31,8 @@ export default function CarForm() {
   const [error, setError] = useState('')
 
   const [allClients, setAllClients] = useState<Client[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [brandModels, setBrandModels] = useState<Record<string, string[]>>({})
   const [clientModalOpen, setClientModalOpen] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
   const [clientAddMode, setClientAddMode] = useState(false)
@@ -40,7 +42,15 @@ export default function CarForm() {
 
   useEffect(() => {
     getAllClients().then(setAllClients).catch(() => {})
+    getBrands().then(setBrands).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!brand) return
+    const brandObj = brands.find(b => b.name === brand)
+    if (!brandObj) return
+    getModels(brandObj.id).then(ms => setBrandModels(prev => ({ ...prev, [brand]: ms.map(m => m.name) }))).catch(() => {})
+  }, [brand, brands])
 
   useEffect(() => {
     if (!id) return
@@ -182,7 +192,7 @@ export default function CarForm() {
             <select value={brand} onChange={e => { setBrand(e.target.value); setModel('') }} required
               className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
               <option value="">{t('car.select_brand')}</option>
-              {Object.keys(BRANDS).map(b => <option key={b} value={b}>{b}</option>)}
+              {brands.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
             </select>
           </div>
           <div>
@@ -190,7 +200,7 @@ export default function CarForm() {
             <select value={model} onChange={e => setModel(e.target.value)} required disabled={!brand}
               className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50">
               <option value="">{t('car.select_model')}</option>
-              {brand && BRANDS[brand].map(m => <option key={m} value={m}>{m}</option>)}
+              {brand && brandModels[brand]?.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
           <div>

@@ -23,6 +23,7 @@
     "users": "المستخدمين",
     "notifications": "الإشعارات",
     "activity_log": "سجل النشاطات",
+    "brands": "الماركات والموديلات",
     "export": "تصدير Excel",
     "logout": "تسجيل خروج",
     "view_table": "قائمة",
@@ -134,6 +135,17 @@
     "no_delete_requests": "لا توجد طلبات حذف",
     "prev_page": "السابق",
     "next_page": "التالي"
+  },
+  "brands": {
+    "title": "إدارة الماركات والموديلات",
+    "add_brand": "إضافة ماركة",
+    "edit_brand": "تعديل الماركة",
+    "brand_name": "اسم الماركة",
+    "delete_confirm": "تأكيد حذف الماركة",
+    "models": "الموديلات",
+    "add_model": "إضافة موديل",
+    "model_name": "اسم الموديل",
+    "no_models": "لا توجد موديلات"
   },
   "users": {
     "title": "إدارة المستخدمين",

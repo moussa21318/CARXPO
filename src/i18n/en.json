@@ -23,6 +23,7 @@
     "users": "Users",
     "notifications": "Notifications",
     "activity_log": "Activity Log",
+    "brands": "Brands & Models",
     "export": "Export Excel",
     "logout": "Logout",
     "view_table": "Table",
@@ -134,6 +135,17 @@
     "no_delete_requests": "No deletion requests",
     "prev_page": "Previous",
     "next_page": "Next"
+  },
+  "brands": {
+    "title": "Brands & Models",
+    "add_brand": "Add Brand",
+    "edit_brand": "Edit Brand",
+    "brand_name": "Brand Name",
+    "delete_confirm": "Delete brand",
+    "models": "Models",
+    "add_model": "Add Model",
+    "model_name": "Model Name",
+    "no_models": "No models"
   },
   "users": {
     "title": "User Management",

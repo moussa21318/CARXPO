@@ -34,6 +34,7 @@ export default function MainLayout() {
   ]
 
   if (user?.role === 'admin') {
+    links.push({ to: '/brands', label: 'nav.brands', icon: '🏷️' })
     links.push({ to: '/users', label: 'nav.users', icon: '👥' })
     links.push({ to: '/activity-log', label: 'nav.activity_log', icon: '📋' })
   }

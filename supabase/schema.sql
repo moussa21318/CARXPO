@@ -74,6 +74,22 @@ CREATE TABLE cars (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Brands
+CREATE TABLE brands (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Models
+CREATE TABLE models (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(brand_id, name)
+);
+
 -- Car fees
 CREATE TABLE car_fees (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

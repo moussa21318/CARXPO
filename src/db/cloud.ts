@@ -2,6 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type {
   User, Car, CarFees, CarStageLog, Client, Customer,
   EditRequest, ChangeLog, Notification, CarStage, CarAttachment, DeleteRequest, CustomerPayment,
+  Brand, Model,
 } from '../types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -169,6 +170,51 @@ export async function deleteCars(ids: string[]): Promise<void> {
 
   const { error } = await getClient().from('cars').delete().in('id', ids)
   if (error) handleError('deleteCars failed', error)
+}
+
+// --- Brands & Models ---
+export async function getBrands(): Promise<Brand[]> {
+  try {
+    const { data, error } = await getClient().from('brands').select('*').order('name', { ascending: true })
+    if (error) return []
+    return (data as Brand[]) || []
+  } catch { return [] }
+}
+
+export async function createBrand(name: string): Promise<Brand> {
+  const { data, error } = await getClient().from('brands').insert({ name }).select().single()
+  if (error) handleError('createBrand failed', error)
+  return data as Brand
+}
+
+export async function updateBrand(id: string, name: string): Promise<Brand> {
+  const { data, error } = await getClient().from('brands').update({ name }).eq('id', id).select().single()
+  if (error) handleError('updateBrand failed', error)
+  return data as Brand
+}
+
+export async function deleteBrand(id: string): Promise<void> {
+  const { error } = await getClient().from('brands').delete().eq('id', id)
+  if (error) handleError('deleteBrand failed', error)
+}
+
+export async function getModels(brandId: string): Promise<Model[]> {
+  try {
+    const { data, error } = await getClient().from('models').select('*').eq('brand_id', brandId).order('name', { ascending: true })
+    if (error) return []
+    return (data as Model[]) || []
+  } catch { return [] }
+}
+
+export async function createModel(brandId: string, name: string): Promise<Model> {
+  const { data, error } = await getClient().from('models').insert({ brand_id: brandId, name }).select().single()
+  if (error) handleError('createModel failed', error)
+  return data as Model
+}
+
+export async function deleteModel(id: string): Promise<void> {
+  const { error } = await getClient().from('models').delete().eq('id', id)
+  if (error) handleError('deleteModel failed', error)
 }
 
 // --- Fees ---
