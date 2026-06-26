@@ -4,7 +4,9 @@ A complete car dealership CRM for managing import and sales operations, with mul
 
 ## Features
 
-- **Car Management** — Add, edit, delete with role-based permissions
+- **Car Management** — Add, edit, delete with brand/model/trim/color fields, role-based permissions
+- **Brand/Model/Trim** — Manage makes, models and trims via DB, admin management page
+- **Car Color** — Optional color field stored in DB, displayed in car details
 - **Stage Pipeline** — Request → Deposit → Purchase → Shipping Prep → Shipping
 - **Fees & Expenses** — Track deposits, transport, parking and other costs
 - **Attachments & Evidence** — Upload files and evidence images per stage
@@ -15,6 +17,8 @@ A complete car dealership CRM for managing import and sales operations, with mul
 - **i18n** — Arabic, English, French (RTL support)
 - **Dark Mode** — Toggle between light and dark themes
 - **Responsive** — Works on desktop, tablet and mobile
+
+Auto-generated car name includes trim (e.g., "KIA MORNING - LX"). Color is stored separately and displayed only in car details (not appended to car name or shown in list tables).
 
 ## Tech Stack
 
