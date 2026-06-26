@@ -71,6 +71,7 @@ export default function CarDetails() {
   const [modalBrand, setModalBrand] = useState('')
   const [modalModel, setModalModel] = useState('')
   const [modalTrim, setModalTrim] = useState('')
+const [modalColor, setModalColor] = useState('')
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -110,6 +111,7 @@ export default function CarDetails() {
     setModalBrand(car.brand || '')
     setModalModel(car.model || '')
     setModalTrim(car.trim || '')
+    setModalColor(car.color || '')
     if (car.brand) {
       const brandObj = brands.find(b => b.name === car.brand)
       if (brandObj) getModels(brandObj.id).then(ms => setBrandModels(prev => ({ ...prev, [car.brand!]: ms.map(m => m.name) })))
@@ -120,10 +122,11 @@ export default function CarDetails() {
   const handleConfirmSave = async () => {
     if (!id || !user || !car) return
     await updateCar(id, {
-      name: `${modalBrand} ${modalModel}`,
+      name: modalTrim ? `${modalBrand} ${modalModel} - ${modalTrim}` : `${modalBrand} ${modalModel}`,
       brand: modalBrand || null,
       model: modalModel || null,
       trim: modalTrim || null,
+      color: modalColor || null,
       license_plate: modalLp || null,
       model_year: modalMy,
       initial_price: modalPrice,
@@ -482,6 +485,7 @@ export default function CarDetails() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div><span className="text-gray-500 dark:text-gray-400">{t('car.serial_number')}:</span> <span className="font-mono">{car.serial_number || '-'}</span></div>
           <div><span className="text-gray-500 dark:text-gray-400">{t('car.license_plate')}:</span> <span>{car.license_plate || '-'}</span></div>
+          <div><span className="text-gray-500 dark:text-gray-400">{t('car.color')}:</span> <span>{car.color || '-'}</span></div>
           <div><span className="text-gray-500 dark:text-gray-400">{t('car.seller_phone')}:</span> <span>{car.seller_phone || '-'}</span></div>
           <div><span className="text-gray-500 dark:text-gray-400">{t('car.initial_price')}:</span> <span>{formatPrice(car.initial_price)}</span></div>
           <div><span className="text-gray-500 dark:text-gray-400">{t('car.current_stage')}:</span> <span>{t(STAGE_LABELS[car.current_stage])}</span></div>
@@ -825,6 +829,12 @@ export default function CarDetails() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.trim')}</label>
               <input value={modalTrim} onChange={e => setModalTrim(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.color')}</label>
+              <input value={modalColor} onChange={e => setModalColor(e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
 

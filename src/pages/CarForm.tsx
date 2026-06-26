@@ -16,6 +16,7 @@ export default function CarForm() {
   const [brand, setBrand] = useState('')
   const [model, setModel] = useState('')
   const [trim, setTrim] = useState('')
+  const [color, setColor] = useState('')
   const [modelYear, setModelYear] = useState(MODEL_YEARS[0])
   const [serialNumber, setSerialNumber] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
@@ -60,6 +61,7 @@ export default function CarForm() {
       setBrand(car.brand || '')
       setModel(car.model || '')
       setTrim(car.trim || '')
+      setColor(car.color || '')
       setModelYear(car.model_year)
       setSerialNumber(car.serial_number || '')
       setLicensePlate(car.license_plate || '')
@@ -135,7 +137,7 @@ export default function CarForm() {
     try {
       if (isEdit && id) {
         const payload: any = {
-          name, brand: brand || null, model: model || null, trim: trim || null,
+          name, brand: brand || null, model: model || null, trim: trim || null, color: color || null,
           model_year: modelYear, serial_number: serialNumber || null,
           license_plate: licensePlate || null, seller_phone: sellerPhone,
           initial_price: initialPrice, notes, updated_by: user.id,
@@ -150,7 +152,7 @@ export default function CarForm() {
         }
       } else {
         const car = await createCar({
-          name, brand: brand || null, model: model || null, trim: trim || null,
+          name, brand: brand || null, model: model || null, trim: trim || null, color: color || null,
           model_year: modelYear, code, notes, created_by: user.id, updated_by: user.id,
         })
         if (clientId) {
@@ -172,8 +174,9 @@ export default function CarForm() {
 
   useEffect(() => {
     if (!brand && !model) return
-    setName(brand && model ? `${brand} ${model}` : brand || model || '')
-  }, [brand, model])
+    const base = brand && model ? `${brand} ${model}` : brand || model || ''
+    setName(trim ? `${base} - ${trim}` : base)
+  }, [brand, model, trim])
 
   const filteredClients = allClients.filter(c =>
     !clientSearch ||
@@ -206,6 +209,11 @@ export default function CarForm() {
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.trim')}</label>
             <input value={trim} onChange={e => setTrim(e.target.value)}
+              className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.color')}</label>
+            <input value={color} onChange={e => setColor(e.target.value)}
               className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
         <div>

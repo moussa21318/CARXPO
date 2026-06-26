@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx'
 
 type TableType = 'cars' | 'customers'
 
-const CAR_COLUMNS = ['name', 'brand', 'model', 'trim', 'model_year', 'serial_number', 'license_plate', 'seller_phone', 'initial_price', 'notes']
+const CAR_COLUMNS = ['name', 'brand', 'model', 'trim', 'color', 'model_year', 'serial_number', 'license_plate', 'seller_phone', 'initial_price', 'notes']
 const CUSTOMER_COLUMNS = ['full_name_latin', 'national_id', 'address_latin', 'postal_code', 'phone', 'email']
 
 export default function ImportPage() {

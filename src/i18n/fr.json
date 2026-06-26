@@ -54,6 +54,7 @@
     "brand": "Marque",
     "model": "Modèle",
     "trim": "Finition",
+    "color": "Couleur",
     "select_brand": "-- Sélectionner la marque --",
     "select_model": "-- Sélectionner le modèle --",
     "code": "Code",

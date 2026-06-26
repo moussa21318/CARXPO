@@ -54,6 +54,7 @@
     "brand": "Car Brand",
     "model": "Model",
     "trim": "Trim",
+    "color": "Car Color",
     "select_brand": "-- Select Brand --",
     "select_model": "-- Select Model --",
     "code": "Code",

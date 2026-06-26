@@ -57,6 +57,7 @@ CREATE TABLE cars (
   brand TEXT,
   model TEXT,
   trim TEXT,
+  color TEXT,
   model_year INTEGER NOT NULL,
   serial_number TEXT,
   license_plate TEXT,

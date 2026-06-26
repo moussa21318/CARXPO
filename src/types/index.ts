@@ -32,6 +32,7 @@ export interface Car {
   brand: string | null
   model: string | null
   trim: string | null
+  color: string | null
   model_year: number
   serial_number: string | null
   license_plate: string | null
