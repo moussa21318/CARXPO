@@ -121,9 +121,6 @@
     "attachment_name": "Attachment Name",
     "attachment_url": "Attachment URL",
     "add_attachment": "Add Attachment",
-    "deleted_file": "File deleted",
-    "cancel_delete_request": "Cancel Request",
-    "cancel_confirm": "Are you sure you want to cancel the delete request?",
     "load_error": "Failed to load data",
     "select_file": "Choose a file...",
     "uploading": "Uploading...",
@@ -276,8 +273,7 @@
     "cash": "Cash",
     "bank_transfer": "Bank Transfer",
     "check": "Check",
-    "credit_card": "Credit Card",
-    "settlement": "Deletion Settlement"
+    "credit_card": "Credit Card"
   },
   "clients": {
     "title": "Manage Clients",
