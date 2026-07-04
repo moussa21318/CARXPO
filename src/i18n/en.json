@@ -71,6 +71,7 @@
     "stage_history": "Stage History",
     "request_client": "Order Client",
     "client_name": "Client Name",
+    "client_name_required": "Client name is required",
     "client_phone": "Client Phone",
     "deposit_amount": "Deposit Amount",
     "evidence": "Purchase Evidence",

@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../db/cloud'
@@ -7,6 +8,7 @@ import type { Notification } from '../types'
 export default function NotificationsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -46,7 +48,7 @@ export default function NotificationsPage() {
       ) : (
         <div className="space-y-3">
           {notifications.map(n => (
-            <div key={n.id} onClick={() => handleMarkRead(n.id)}
+            <div key={n.id} onClick={async () => { await markNotificationRead(n.id); if (n.car_id) navigate('/cars/' + n.car_id) }}
               className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${!n.is_read ? 'border-r-4 border-blue-500' : ''}`}>
               <div className="flex justify-between items-start">
                 <div>

@@ -71,6 +71,7 @@
     "stage_history": "Historique des étapes",
     "request_client": "Client demandeur",
     "client_name": "Nom du client",
+    "client_name_required": "Le nom du client est requis",
     "client_phone": "Téléphone du client",
     "deposit_amount": "Montant de l'acompte",
     "evidence": "Preuve d'achat",

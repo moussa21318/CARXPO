@@ -71,6 +71,7 @@
     "stage_history": "سجل المراحل",
     "request_client": "صاحب الطلبية",
     "client_name": "اسم الزبون",
+    "client_name_required": "اسم الزبون مطلوب",
     "client_phone": "هاتف الزبون",
     "deposit_amount": "قيمة العربون",
     "evidence": "إثبات الشراء",

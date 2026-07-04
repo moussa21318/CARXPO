@@ -132,6 +132,10 @@ export default function CarForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || !canEdit) return
+    if (!clientName.trim()) {
+      setError(t('car.client_name_required'))
+      return
+    }
     setSaving(true)
     setError('')
     try {
@@ -272,7 +276,7 @@ export default function CarForm() {
           <h3 className="font-medium mb-3">{t('car.request_client')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.client_name')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('car.client_name')} <span className="text-red-500">*</span> <span className="text-xs text-gray-400">{t('app.required')}</span></label>
               <div className="relative">
                 <input value={clientName} onChange={e => setClientName(e.target.value)}
                   onFocus={openClientModal}
