@@ -2,7 +2,7 @@ export type CarStage = 'request' | 'deposit' | 'purchase' | 'shipping_prep' | 's
 export type UserRole = 'admin' | 'employee'
 export type EditRequestStatus = 'pending' | 'approved' | 'rejected'
 export type DeleteRequestStatus = 'pending' | 'approved' | 'rejected'
-export type NotificationType = 'car_added' | 'car_updated' | 'car_deleted' | 'edit_requested' | 'edit_approved' | 'edit_rejected' | 'stage_changed' | 'car_confirmed'
+export type NotificationType = 'car_added' | 'car_updated' | 'car_deleted' | 'edit_requested' | 'edit_approved' | 'edit_rejected' | 'stage_changed' | 'car_confirmed' | 'delete_requested' | 'delete_approved' | 'delete_rejected'
 export type Lang = 'ar' | 'fr' | 'en'
 
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'credit_card'

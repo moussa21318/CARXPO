@@ -409,7 +409,24 @@ export async function getDeleteRequests(carId?: string): Promise<DeleteRequest[]
 export async function createDeleteRequest(payload: Partial<DeleteRequest>): Promise<DeleteRequest> {
   const { data, error } = await getClient().from('delete_requests').insert(payload).select().single()
   if (error) handleError('createDeleteRequest failed', error)
-  return data as DeleteRequest
+  const req = data as DeleteRequest
+  try {
+    const car = await getCar(req.car_id)
+    const carName = car?.name || req.car_id
+    const users = await getUsers()
+    const admins = users.filter(u => u.role === 'admin')
+    for (const admin of admins) {
+      await createNotification({
+        user_id: admin.id,
+        type: 'delete_requested',
+        title: `طلب حذف سيارة: ${carName}`,
+        body: req.reason || '',
+        car_id: req.car_id,
+        created_by: req.requested_by,
+      })
+    }
+  } catch { /* notification failure is non-critical */ }
+  return req
 }
 
 export async function reviewDeleteRequest(id: string, status: 'approved' | 'rejected', reviewedBy: string, reviewNotes?: string): Promise<string | null> {
@@ -419,6 +436,19 @@ export async function reviewDeleteRequest(id: string, status: 'approved' | 'reje
     status, reviewed_by: reviewedBy, review_notes: reviewNotes || null, reviewed_at: new Date().toISOString(),
   }).eq('id', id)
   if (updateErr) handleError('reviewDeleteRequest failed', updateErr)
+  try {
+    const car = await getCar(req.car_id)
+    const carName = car?.name || req.car_id
+    const title = status === 'approved' ? `تمت الموافقة على حذف: ${carName}` : `تم رفض حذف: ${carName}`
+    await createNotification({
+      user_id: req.requested_by,
+      type: status === 'approved' ? 'delete_approved' : 'delete_rejected',
+      title,
+      body: reviewNotes || '',
+      car_id: req.car_id,
+      created_by: reviewedBy,
+    })
+  } catch { /* notification failure is non-critical */ }
   if (status === 'approved') {
     await deleteCar(req.car_id)
     return req.car_id
