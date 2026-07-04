@@ -45,6 +45,8 @@ export default function CarsList() {
 
   useEffect(() => { loadCars() }, [stageFilter, searchFilter, clientFilter, page])
 
+  useEffect(() => { if (user?.role === 'admin') loadDeleteRequests() }, [user])
+
   useEffect(() => { setPage(1) }, [stageFilter, searchFilter])
 
   const toggleSelect = (id: string) => {
@@ -81,6 +83,11 @@ export default function CarsList() {
   const loadDeleteRequests = async () => {
     const data = await getDeleteRequests()
     setDeleteRequests(data)
+  }
+
+  const handleOpenDeleteManager = async () => {
+    await loadDeleteRequests()
+    setManageDeleteOpen(true)
   }
 
   const handleReviewDelete = async (reqId: string, status: 'approved' | 'rejected') => {
@@ -179,9 +186,14 @@ export default function CarsList() {
           </button>
         )}
         {user?.role === 'admin' && (
-          <button onClick={() => { loadDeleteRequests(); setManageDeleteOpen(true) }}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm whitespace-nowrap">
+          <button onClick={handleOpenDeleteManager}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm whitespace-nowrap relative">
             {t('car.manage_delete_requests')}
+            {deleteRequests.filter(r => r.status === 'pending').length > 0 && (
+              <span className="absolute -top-2 -end-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                {deleteRequests.filter(r => r.status === 'pending').length}
+              </span>
+            )}
           </button>
         )}
       </div>
