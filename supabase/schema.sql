@@ -72,7 +72,8 @@ CREATE TABLE cars (
   created_by UUID REFERENCES users(id),
   updated_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted BOOLEAN DEFAULT false
 );
 
 -- Brands
@@ -176,7 +177,7 @@ CREATE TABLE customer_payments (
   car_id UUID REFERENCES cars(id) ON DELETE SET NULL,
   amount NUMERIC(12,2) NOT NULL,
   payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  payment_method TEXT DEFAULT 'cash' CHECK (payment_method IN ('cash','bank_transfer','check','credit_card')),
+  payment_method TEXT DEFAULT 'cash' CHECK (payment_method IN ('cash','bank_transfer','check','credit_card','settlement')),
   receipt_url TEXT,
   notes TEXT DEFAULT '',
   created_by UUID REFERENCES users(id),

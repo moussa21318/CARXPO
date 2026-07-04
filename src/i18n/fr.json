@@ -121,6 +121,9 @@
     "attachment_name": "Nom de la pièce",
     "attachment_url": "URL de la pièce",
     "add_attachment": "Ajouter une pièce",
+    "deleted_file": "Fichier supprimé",
+    "cancel_delete_request": "Annuler la demande",
+    "cancel_confirm": "Êtes-vous sûr de vouloir annuler la demande de suppression ?",
     "load_error": "Échec du chargement",
     "select_file": "Choisir un fichier...",
     "uploading": "Téléchargement...",
@@ -273,7 +276,8 @@
     "cash": "Espèces",
     "bank_transfer": "Virement bancaire",
     "check": "Chèque",
-    "credit_card": "Carte de crédit"
+    "credit_card": "Carte de crédit",
+    "settlement": "Règlement de suppression"
   },
   "clients": {
     "title": "Gérer les clients",

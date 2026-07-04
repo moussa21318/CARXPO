@@ -85,9 +85,10 @@ export function generateNextCode(lastCode: string | null): string {
   return `${nextLetter}01`
 }
 
-export async function getCars(filter?: { stage?: CarStage; search?: string }): Promise<Car[]> {
+export async function getCars(filter?: { stage?: CarStage; search?: string; includeDeleted?: boolean }): Promise<Car[]> {
   try {
     let q = getClient().from('cars').select('*').order('created_at', { ascending: false })
+    if (!filter?.includeDeleted) q = q.eq('deleted', false)
     if (filter?.stage) q = q.eq('current_stage', filter.stage)
     if (filter?.search) {
       q = q.or(`name.ilike.%${filter.search}%,serial_number.ilike.%${filter.search}%,license_plate.ilike.%${filter.search}%,seller_phone.ilike.%${filter.search}%`)
@@ -98,11 +99,12 @@ export async function getCars(filter?: { stage?: CarStage; search?: string }): P
   } catch { return [] }
 }
 
-export async function getCarsPaginated(filter: { stage?: CarStage; search?: string; clientId?: string; page: number; pageSize: number }): Promise<{ cars: Car[]; total: number }> {
+export async function getCarsPaginated(filter: { stage?: CarStage; search?: string; clientId?: string; page: number; pageSize: number; includeDeleted?: boolean }): Promise<{ cars: Car[]; total: number }> {
   try {
     const from = (filter.page - 1) * filter.pageSize
     const to = from + filter.pageSize - 1
     let q = getClient().from('cars').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to)
+    if (!filter.includeDeleted) q = q.eq('deleted', false)
     if (filter.stage) q = q.eq('current_stage', filter.stage)
     if (filter.clientId) q = q.eq('client_id', filter.clientId)
     if (filter.search) {
@@ -450,10 +452,47 @@ export async function reviewDeleteRequest(id: string, status: 'approved' | 'reje
     })
   } catch { /* notification failure is non-critical */ }
   if (status === 'approved') {
-    await deleteCar(req.car_id)
+    try {
+      const car = await getCar(req.car_id)
+      const fees = await getCarFees(req.car_id)
+      if (car?.client_id && fees) {
+        const reason = req.reason || ''
+        const feeKeys: (keyof CarFees)[] = ['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02']
+        for (const feeKey of feeKeys) {
+          const amount = fees[feeKey] as number
+          if (amount > 0) {
+            await createCustomerPayment({
+              client_id: car.client_id,
+              car_id: req.car_id,
+              amount: -amount,
+              payment_date: new Date().toISOString().slice(0, 10),
+              payment_method: 'settlement',
+              notes: `تسوية حذف: ${car.name} ${car.brand || ''} ${car.model || ''} ${car.model_year} - ${reason}`,
+              created_by: reviewedBy,
+            })
+          }
+        }
+      }
+    } catch { /* settlement failure is non-critical */ }
+    const storagePaths: string[] = []
+    const attachments = await getAttachments(req.car_id)
+    storagePaths.push(...attachments.map(a => a.storage_path))
+    const { data: evFiles } = await getClient().storage.from('car_attachments').list(`evidence/${req.car_id}`)
+    if (evFiles) storagePaths.push(...evFiles.map(f => `evidence/${req.car_id}/${f.name}`))
+    if (storagePaths.length > 0) {
+      await getClient().storage.from('car_attachments').remove(storagePaths)
+    }
+    await getClient().from('cars').update({ deleted: true, updated_by: reviewedBy }).eq('id', req.car_id)
     return req.car_id
   }
   return null
+}
+
+export async function cancelDeleteRequest(id: string, userId: string): Promise<void> {
+  const { error } = await getClient().from('delete_requests')
+    .update({ status: 'rejected', reviewed_by: userId, review_notes: 'ملغي من قبل الطالب', reviewed_at: new Date().toISOString() })
+    .eq('id', id).eq('requested_by', userId).eq('status', 'pending')
+  if (error) handleError('cancelDeleteRequest failed', error)
 }
 
 async function getDeleteRequestsForReview(id: string): Promise<DeleteRequest | null> {

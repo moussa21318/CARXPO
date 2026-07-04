@@ -388,6 +388,14 @@ const [modalColor, setModalColor] = useState('')
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {car.deleted && (
+        <div className="bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700 rounded-xl p-4 text-center">
+          <p className="text-red-700 dark:text-red-300 font-semibold text-lg">⚠️ {t('car.deleted_file')}</p>
+          <p className="text-red-600 dark:text-red-400 text-sm mt-1">{car.name} ({car.model_year})</p>
+        </div>
+      )}
+
+      {!car.deleted && (
       <div className="flex items-center gap-4 flex-wrap">
         <Link to="/cars" className="text-blue-600 dark:text-blue-400 hover:underline">{t('app.back')}</Link>
         <h1 className="text-2xl font-bold flex-1">{car.name} ({car.model_year}) {car.code ? <span className="text-sm font-mono text-gray-400 dark:text-gray-500">[{car.code}]</span> : ''}</h1>
@@ -402,7 +410,7 @@ const [modalColor, setModalColor] = useState('')
             🗑 {t('car.delete_car')}
           </button>
         )}
-        {user?.role === 'employee' && !deleteRequests.find(r => r.status === 'pending') && !deleteRequests.find(r => r.status === 'approved') && (
+        {user?.role === 'employee' && !deleteRequests.find(r => r.status === 'pending') && !deleteRequests.find(r => r.status === 'approved') && !car.deleted && (
           <button onClick={() => setDeleteRequestOpen(true)}
             className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 text-sm">
             {t('car.delete_request')}
@@ -411,6 +419,8 @@ const [modalColor, setModalColor] = useState('')
         {user?.role === 'employee' && deleteRequests.find(r => r.status === 'pending') && (
           <span className="text-yellow-600 dark:text-yellow-400 text-sm flex items-center gap-1">
             ⏳ {t('car.delete_request_pending')}
+            <button onClick={() => { const dr = deleteRequests.find(r => r.status === 'pending' && r.requested_by === user?.id); if (dr && window.confirm(t('car.cancel_confirm'))) { import('../db/cloud').then(m => m.cancelDeleteRequest(dr.id, user!.id)).then(() => loadData()) } }}
+              className="text-red-500 hover:text-red-700 underline ml-2 text-xs">{t('car.cancel_delete_request')}</button>
           </span>
         )}
         {user?.role === 'employee' && deleteRequests.find(r => r.status === 'approved') && (
@@ -424,7 +434,9 @@ const [modalColor, setModalColor] = useState('')
           </span>
         )}
       </div>
+      )}
 
+      {!car.deleted && (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <div className="flex items-center gap-2 mb-4 overflow-x-auto">
           {STAGE_ORDER.map((s, i) => (
@@ -527,6 +539,7 @@ const [modalColor, setModalColor] = useState('')
           </div>
         )}
       </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <h2 className="font-semibold mb-4">{t('car.info')}</h2>
@@ -562,12 +575,12 @@ const [modalColor, setModalColor] = useState('')
               return (
                 <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                   <label className="sm:w-28 text-sm text-gray-600 dark:text-gray-300">{t(`car.${key}`)}</label>
-                  <input type="number" value={fees?.[key] || 0} min={0}
+                  <input type="number" value={fees?.[key] || 0} min={0} disabled={car.deleted}
                     onChange={e => handleSaveFees({ [key]: Number(e.target.value) })}
-                    className="border rounded-lg p-2 w-full sm:w-36 outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input type="date" value={fees?.[dateKey] as string || ''}
+                    className="border rounded-lg p-2 w-full sm:w-36 outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
+                  <input type="date" value={fees?.[dateKey] as string || ''} disabled={car.deleted}
                     onChange={e => handleSaveFees({ [key]: fees?.[key] || 0, [dateKey]: e.target.value || null } as any)}
-                    className="border rounded-lg p-2 w-full sm:w-36 outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="border rounded-lg p-2 w-full sm:w-36 outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
                 </div>
               )
             })}
@@ -581,7 +594,7 @@ const [modalColor, setModalColor] = useState('')
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <h2 className="font-semibold mb-4">{t('car.attachments')}</h2>
 
-        {canEdit && (
+        {canEdit && !car.deleted && (
           <div className="space-y-4 mb-4">
             <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
               <h3 className="text-sm font-medium text-blue-700 dark:text-blue-300">{t('car.registration')}</h3>
@@ -663,7 +676,7 @@ const [modalColor, setModalColor] = useState('')
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold">{t('payments.car_payments')}</h2>
-          {canEdit && (
+          {canEdit && !car.deleted && (
             <button onClick={() => setPaymentOpen(true)}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
               + {t('payments.add')}

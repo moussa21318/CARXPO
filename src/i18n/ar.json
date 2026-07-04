@@ -121,6 +121,9 @@
     "attachment_name": "اسم المرفق",
     "attachment_url": "رابط المرفق",
     "add_attachment": "إضافة مرفق",
+    "deleted_file": "تم حذف الملف",
+    "cancel_delete_request": "إلغاء الطلب",
+    "cancel_confirm": "هل أنت متأكد من إلغاء طلب الحذف؟",
     "load_error": "فشل تحميل البيانات",
     "select_file": "اختر ملفاً...",
     "uploading": "جاري الرفع...",
@@ -273,7 +276,8 @@
     "cash": "نقداً",
     "bank_transfer": "تحويل بنكي",
     "check": "شيك",
-    "credit_card": "بطاقة ائتمان"
+    "credit_card": "بطاقة ائتمان",
+    "settlement": "تسوية حذف"
   },
   "clients": {
     "title": "إدارة الزبائن",
