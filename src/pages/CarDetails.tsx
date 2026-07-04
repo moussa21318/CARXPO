@@ -41,9 +41,17 @@ export default function CarDetails() {
   const [attachments, setAttachments] = useState<(CarAttachment & { publicUrl: string })[]>([])
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
   const [evidencePublicUrl, setEvidencePublicUrl] = useState('')
-  const [newAttachFile, setNewAttachFile] = useState<File | null>(null)
+  const [regFile, setRegFile] = useState<File | null>(null)
+  const [deregFile, setDeregFile] = useState<File | null>(null)
+  const [otherAttachFiles, setOtherAttachFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
+  const [uploadingReg, setUploadingReg] = useState(false)
+  const [uploadingDereg, setUploadingDereg] = useState(false)
+  const [uploadingOther, setUploadingOther] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [regError, setRegError] = useState('')
+  const [deregError, setDeregError] = useState('')
+  const [otherError, setOtherError] = useState('')
   const [loading, setLoading] = useState(true)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -229,19 +237,59 @@ const [modalColor, setModalColor] = useState('')
     }
   }
 
-  const handleAddAttachment = async () => {
-    if (!id || !newAttachFile) return
-    setUploading(true)
-    setUploadError('')
+  const handleUploadRegistration = async () => {
+    if (!id || !regFile || !car) return
+    if (!car.serial_number) { setRegError(t('car.serial_required_attachment')); return }
+    setRegError('')
+    setUploadingReg(true)
     try {
-      const { storagePath } = await uploadFile('car_attachments', `attachments/${id}`, newAttachFile)
-      await addAttachment({ car_id: id, name: newAttachFile.name, storage_path: storagePath })
-      setNewAttachFile(null)
+      const { storagePath } = await uploadFile('car_attachments', `attachments/${id}`, regFile)
+      await addAttachment({ car_id: id, name: `${car.serial_number}  registration`, storage_path: storagePath })
+      setRegFile(null)
       loadData()
     } catch (err: any) {
-      setUploadError(err?.message || t('app.error'))
+      setRegError(err?.message || t('app.error'))
     } finally {
-      setUploading(false)
+      setUploadingReg(false)
+    }
+  }
+
+  const handleUploadDeregistration = async () => {
+    if (!id || !deregFile || !car) return
+    if (!car.serial_number) { setDeregError(t('car.serial_required_attachment')); return }
+    setDeregError('')
+    setUploadingDereg(true)
+    try {
+      const { storagePath } = await uploadFile('car_attachments', `attachments/${id}`, deregFile)
+      await addAttachment({ car_id: id, name: `${car.serial_number}  deregistration`, storage_path: storagePath })
+      setDeregFile(null)
+      loadData()
+    } catch (err: any) {
+      setDeregError(err?.message || t('app.error'))
+    } finally {
+      setUploadingDereg(false)
+    }
+  }
+
+  const handleUploadOther = async () => {
+    if (!id || otherAttachFiles.length === 0 || !car) return
+    setOtherError('')
+    setUploadingOther(true)
+    try {
+      const existingOthers = attachments.filter(a => !a.name.endsWith('  registration') && !a.name.endsWith('  deregistration'))
+      let seq = existingOthers.length + 1
+      const prefix = car.serial_number || car.code || ''
+      for (const file of otherAttachFiles) {
+        const { storagePath } = await uploadFile('car_attachments', `attachments/${id}`, file)
+        await addAttachment({ car_id: id, name: `${prefix}  ${car.brand || ''} ${car.model || ''} ${car.model_year} - ${String(seq).padStart(2, '0')}`, storage_path: storagePath })
+        seq++
+      }
+      setOtherAttachFiles([])
+      loadData()
+    } catch (err: any) {
+      setOtherError(err?.message || t('app.error'))
+    } finally {
+      setUploadingOther(false)
     }
   }
 
@@ -532,10 +580,72 @@ const [modalColor, setModalColor] = useState('')
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <h2 className="font-semibold mb-4">{t('car.attachments')}</h2>
+
+        {canEdit && (
+          <div className="space-y-4 mb-4">
+            <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
+              <h3 className="text-sm font-medium text-blue-700 dark:text-blue-300">{t('car.registration')}</h3>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <label className="flex-1 flex items-center gap-2 px-3 py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors text-sm text-gray-500 dark:text-gray-400">
+                  <span>📎</span>
+                  <span className={regFile ? 'text-gray-800 dark:text-gray-200 font-medium' : ''}>
+                    {regFile ? regFile.name : t('car.select_file')}
+                  </span>
+                  <input type="file" onChange={e => setRegFile(e.target.files?.[0] || null)}
+                    className="hidden" />
+                </label>
+                <button onClick={handleUploadRegistration} disabled={!regFile || uploadingReg}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm whitespace-nowrap">
+                  {uploadingReg ? t('car.uploading') : t('car.registration_upload')}
+                </button>
+              </div>
+              {regError && <p className="text-sm text-red-600 dark:text-red-400">{regError}</p>}
+            </div>
+
+            <div className="border border-orange-200 dark:border-orange-800 rounded-lg p-4 space-y-2">
+              <h3 className="text-sm font-medium text-orange-700 dark:text-orange-300">{t('car.deregistration')}</h3>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <label className="flex-1 flex items-center gap-2 px-3 py-2.5 border-2 border-dashed border-orange-300 dark:border-orange-700 rounded-lg cursor-pointer hover:border-orange-400 dark:hover:border-orange-500 transition-colors text-sm text-gray-500 dark:text-gray-400">
+                  <span>📎</span>
+                  <span className={deregFile ? 'text-gray-800 dark:text-gray-200 font-medium' : ''}>
+                    {deregFile ? deregFile.name : t('car.select_file')}
+                  </span>
+                  <input type="file" onChange={e => setDeregFile(e.target.files?.[0] || null)}
+                    className="hidden" />
+                </label>
+                <button onClick={handleUploadDeregistration} disabled={!deregFile || uploadingDereg}
+                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 disabled:opacity-50 text-sm whitespace-nowrap">
+                  {uploadingDereg ? t('car.uploading') : t('car.deregistration_upload')}
+                </button>
+              </div>
+              {deregError && <p className="text-sm text-red-600 dark:text-red-400">{deregError}</p>}
+            </div>
+
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('car.other_attachments')}</h3>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <label className="flex-1 flex items-center gap-2 px-3 py-2.5 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors text-sm text-gray-500 dark:text-gray-400">
+                  <span>📎</span>
+                  <span className={otherAttachFiles.length > 0 ? 'text-gray-800 dark:text-gray-200 font-medium' : ''}>
+                    {otherAttachFiles.length > 0 ? `${otherAttachFiles.length} ${t('car.files_selected')}` : t('car.select_files')}
+                  </span>
+                  <input type="file" multiple onChange={e => setOtherAttachFiles(Array.from(e.target.files || []))}
+                    className="hidden" />
+                </label>
+                <button onClick={handleUploadOther} disabled={otherAttachFiles.length === 0 || uploadingOther}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm whitespace-nowrap">
+                  {uploadingOther ? t('car.uploading') : t('car.upload')}
+                </button>
+              </div>
+              {otherError && <p className="text-sm text-red-600 dark:text-red-400">{otherError}</p>}
+            </div>
+          </div>
+        )}
+
         {attachments.length === 0 ? (
-          <p className="text-gray-400 dark:text-gray-500 text-sm mb-3">{t('app.no_data')}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">{t('app.no_data')}</p>
         ) : (
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2">
              {attachments.map(att => (
               <div key={att.id} className="flex items-center gap-3 text-sm border-b dark:border-gray-700 pb-2">
                 <a href={att.publicUrl} target="_blank" rel="noopener noreferrer"
@@ -548,23 +658,6 @@ const [modalColor, setModalColor] = useState('')
             ))}
           </div>
         )}
-        {canEdit && (
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <label className="flex-1 flex items-center gap-2 px-3 py-2.5 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors text-sm text-gray-500 dark:text-gray-400">
-              <span>📎</span>
-              <span className={newAttachFile ? 'text-gray-800 dark:text-gray-200 font-medium' : ''}>
-                {newAttachFile ? newAttachFile.name : t('car.select_file')}
-              </span>
-              <input type="file" onChange={e => setNewAttachFile(e.target.files?.[0] || null)}
-                className="hidden" />
-            </label>
-            <button onClick={handleAddAttachment} disabled={!newAttachFile || uploading}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm whitespace-nowrap">
-              {uploading ? t('car.uploading') : t('car.add_attachment')}
-            </button>
-          </div>
-        )}
-        {uploadError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{uploadError}</p>}
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
