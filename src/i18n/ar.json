@@ -136,6 +136,7 @@
     "delete_request": "طلب حذف",
     "delete_request_sent": "تم إرسال طلب الحذف",
     "delete_request_pending": "بانتظار موافقة المدير",
+    "deleted": "ملف محذوف",
     "delete_request_rejected": "تم رفض طلب الحذف",
     "delete_request_reason": "سبب الحذف (اختياري)",
     "delete_request_notes": "ملاحظات الرفض",
@@ -273,7 +274,8 @@
     "cash": "نقداً",
     "bank_transfer": "تحويل بنكي",
     "check": "شيك",
-    "credit_card": "بطاقة ائتمان"
+    "credit_card": "بطاقة ائتمان",
+    "settlement": "تسوية حذف"
   },
   "clients": {
     "title": "إدارة الزبائن",

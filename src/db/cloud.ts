@@ -450,7 +450,43 @@ export async function reviewDeleteRequest(id: string, status: 'approved' | 'reje
     })
   } catch { /* notification failure is non-critical */ }
   if (status === 'approved') {
-    await deleteCar(req.car_id)
+    const car = await getCar(req.car_id)
+    if (car) {
+      const { error: delErr } = await getClient().from('cars').update({ deleted: true, updated_by: reviewedBy }).eq('id', req.car_id)
+      if (delErr) handleError('reviewDeleteRequest soft-delete failed', delErr)
+
+      if (car.client_id) {
+        const fees = await getCarFees(req.car_id)
+        const feeKeys = ['deposit', 'deposit_02', 'transport_01', 'parking', 'other_fees', 'transport_02'] as const
+        for (const key of feeKeys) {
+          const amount = (fees && fees[key]) || 0
+          if (amount > 0) {
+            const { error: insErr } = await getClient().from('client_settlements').insert({
+              client_id: car.client_id,
+              car_id: req.car_id,
+              amount,
+              fee_type: key,
+              car_name: car.name,
+              car_model: car.model,
+              model_year: car.model_year,
+              reason: `تسوية حذف: ${car.name} ${car.brand || ''} ${car.model || ''} ${car.model_year} - ${key}`,
+              created_by: reviewedBy,
+            })
+            if (insErr) handleError('reviewDeleteRequest insert settlement failed', insErr)
+          }
+        }
+      }
+
+      const storagePaths: string[] = []
+      const attachments = await getAttachments(req.car_id)
+      storagePaths.push(...attachments.map(a => a.storage_path))
+      const { data: evFiles } = await getClient().storage.from('car_attachments').list(`evidence/${req.car_id}`)
+      if (evFiles) storagePaths.push(...evFiles.map(f => `evidence/${req.car_id}/${f.name}`))
+      if (storagePaths.length > 0) {
+        const { error: storErr } = await getClient().storage.from('car_attachments').remove(storagePaths)
+        if (storErr) handleError('reviewDeleteRequest storage cleanup failed', storErr)
+      }
+    }
     return req.car_id
   }
   return null

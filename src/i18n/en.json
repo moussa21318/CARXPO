@@ -136,6 +136,7 @@
     "delete_request": "Request Deletion",
     "delete_request_sent": "Deletion request sent",
     "delete_request_pending": "Pending admin approval",
+    "deleted": "Deleted File",
     "delete_request_rejected": "Deletion request rejected",
     "delete_request_reason": "Reason (optional)",
     "delete_request_notes": "Rejection notes",
@@ -273,7 +274,8 @@
     "cash": "Cash",
     "bank_transfer": "Bank Transfer",
     "check": "Check",
-    "credit_card": "Credit Card"
+    "credit_card": "Credit Card",
+    "settlement": "Deletion Settlement"
   },
   "clients": {
     "title": "Manage Clients",

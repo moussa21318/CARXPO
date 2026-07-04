@@ -136,6 +136,7 @@
     "delete_request": "Demander la suppression",
     "delete_request_sent": "Demande de suppression envoyée",
     "delete_request_pending": "En attente d'approbation",
+    "deleted": "Fichier supprimé",
     "delete_request_rejected": "Demande de suppression rejetée",
     "delete_request_reason": "Motif (optionnel)",
     "delete_request_notes": "Notes de rejet",
@@ -273,7 +274,8 @@
     "cash": "Espèces",
     "bank_transfer": "Virement bancaire",
     "check": "Chèque",
-    "credit_card": "Carte de crédit"
+    "credit_card": "Carte de crédit",
+    "settlement": "Règlement de suppression"
   },
   "clients": {
     "title": "Gérer les clients",

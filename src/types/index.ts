@@ -5,7 +5,7 @@ export type DeleteRequestStatus = 'pending' | 'approved' | 'rejected'
 export type NotificationType = 'car_added' | 'car_updated' | 'car_deleted' | 'edit_requested' | 'edit_approved' | 'edit_rejected' | 'stage_changed' | 'car_confirmed' | 'delete_requested' | 'delete_approved' | 'delete_rejected'
 export type Lang = 'ar' | 'fr' | 'en'
 
-export type PaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'credit_card'
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'credit_card' | 'settlement'
 
 export interface User {
   id: string
@@ -44,6 +44,7 @@ export interface Car {
   customer_id: string | null
   current_stage: CarStage
   confirmed: boolean
+  deleted: boolean
   created_by: string
   updated_by: string
   created_at: string
@@ -191,4 +192,19 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   bank_transfer: 'payment_method.bank_transfer',
   check: 'payment_method.check',
   credit_card: 'payment_method.credit_card',
+  settlement: 'payment_method.settlement',
+}
+
+export interface ClientSettlement {
+  id: string
+  client_id: string | null
+  car_id: string | null
+  amount: number
+  fee_type: string
+  car_name: string | null
+  car_model: string | null
+  model_year: number | null
+  reason: string
+  created_by: string | null
+  created_at: string
 }

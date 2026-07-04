@@ -388,21 +388,28 @@ const [modalColor, setModalColor] = useState('')
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {car.deleted && (
+        <div className="bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700 rounded-xl p-4 text-center">
+          <p className="text-red-700 dark:text-red-300 font-semibold text-lg">⚠️ {t('car.deleted')}</p>
+          <p className="text-red-600 dark:text-red-400 text-sm mt-1">{car.name} ({car.model_year})</p>
+        </div>
+      )}
+
       <div className="flex items-center gap-4 flex-wrap">
         <Link to="/cars" className="text-blue-600 dark:text-blue-400 hover:underline">{t('app.back')}</Link>
         <h1 className="text-2xl font-bold flex-1">{car.name} ({car.model_year}) {car.code ? <span className="text-sm font-mono text-gray-400 dark:text-gray-500">[{car.code}]</span> : ''}</h1>
-        {canEdit && (
+        {!car.deleted && canEdit && (
           <Link to={`/cars/${id}/edit`} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-sm">
             {t('app.edit')}
           </Link>
         )}
-        {user?.role === 'admin' && (
+        {!car.deleted && user?.role === 'admin' && (
           <button onClick={() => setDeleteConfirmOpen(true)}
             className="bg-red-50 dark:bg-red-900/300 text-white px-4 py-2 rounded-lg hover:bg-red-600 text-sm">
             🗑 {t('car.delete_car')}
           </button>
         )}
-        {user?.role === 'employee' && !deleteRequests.find(r => r.status === 'pending') && !deleteRequests.find(r => r.status === 'approved') && (
+        {!car.deleted && user?.role === 'employee' && !deleteRequests.find(r => r.status === 'pending') && !deleteRequests.find(r => r.status === 'approved') && (
           <button onClick={() => setDeleteRequestOpen(true)}
             className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 text-sm">
             {t('car.delete_request')}
@@ -425,6 +432,7 @@ const [modalColor, setModalColor] = useState('')
         )}
       </div>
 
+      {!car.deleted && (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <div className="flex items-center gap-2 mb-4 overflow-x-auto">
           {STAGE_ORDER.map((s, i) => (
@@ -527,6 +535,7 @@ const [modalColor, setModalColor] = useState('')
           </div>
         )}
       </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <h2 className="font-semibold mb-4">{t('car.info')}</h2>
@@ -581,7 +590,7 @@ const [modalColor, setModalColor] = useState('')
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <h2 className="font-semibold mb-4">{t('car.attachments')}</h2>
 
-        {canEdit && (
+        {canEdit && !car.deleted && (
           <div className="space-y-4 mb-4">
             <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
               <h3 className="text-sm font-medium text-blue-700 dark:text-blue-300">{t('car.registration')}</h3>
@@ -663,7 +672,7 @@ const [modalColor, setModalColor] = useState('')
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold">{t('payments.car_payments')}</h2>
-          {canEdit && (
+          {canEdit && !car.deleted && (
             <button onClick={() => setPaymentOpen(true)}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
               + {t('payments.add')}

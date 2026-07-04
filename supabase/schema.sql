@@ -69,6 +69,7 @@ CREATE TABLE cars (
   customer_id UUID REFERENCES customers(id),
   current_stage TEXT NOT NULL DEFAULT 'request' CHECK (current_stage IN ('request','deposit','purchase','shipping_prep','shipping')),
   confirmed BOOLEAN DEFAULT false,
+  deleted BOOLEAN DEFAULT false,
   created_by UUID REFERENCES users(id),
   updated_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -176,9 +177,24 @@ CREATE TABLE customer_payments (
   car_id UUID REFERENCES cars(id) ON DELETE SET NULL,
   amount NUMERIC(12,2) NOT NULL,
   payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  payment_method TEXT DEFAULT 'cash' CHECK (payment_method IN ('cash','bank_transfer','check','credit_card')),
+  payment_method TEXT DEFAULT 'cash' CHECK (payment_method IN ('cash','bank_transfer','check','credit_card','settlement')),
   receipt_url TEXT,
   notes TEXT DEFAULT '',
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Client settlements (debt from soft-deleted cars)
+CREATE TABLE client_settlements (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  car_id UUID REFERENCES cars(id) ON DELETE SET NULL,
+  amount NUMERIC(12,2) NOT NULL,
+  fee_type TEXT NOT NULL,
+  car_name TEXT,
+  car_model TEXT,
+  model_year INTEGER,
+  reason TEXT NOT NULL,
   created_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -225,6 +241,8 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_customer_payments_car_id ON customer_payments(car_id);
 CREATE INDEX IF NOT EXISTS idx_customer_payments_client_id ON customer_payments(client_id);
+CREATE INDEX IF NOT EXISTS idx_client_settlements_client_id ON client_settlements(client_id);
+CREATE INDEX IF NOT EXISTS idx_client_settlements_car_id ON client_settlements(car_id);
 
 -- Disable RLS on all tables (app uses custom auth, not supabase auth)
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
@@ -239,6 +257,7 @@ ALTER TABLE change_log DISABLE ROW LEVEL SECURITY;
 ALTER TABLE car_attachments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_payments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
+ALTER TABLE client_settlements DISABLE ROW LEVEL SECURITY;
 
 -- Automatic activity logging
 CREATE OR REPLACE FUNCTION log_change() RETURNS TRIGGER AS $$
@@ -267,3 +286,4 @@ CREATE TRIGGER trg_customers_log AFTER INSERT OR UPDATE OR DELETE ON customers F
 CREATE TRIGGER trg_edit_requests_log AFTER INSERT OR UPDATE OR DELETE ON edit_requests FOR EACH ROW EXECUTE FUNCTION log_change();
 CREATE TRIGGER trg_delete_requests_log AFTER INSERT OR UPDATE OR DELETE ON delete_requests FOR EACH ROW EXECUTE FUNCTION log_change();
 CREATE TRIGGER trg_customer_payments_log AFTER INSERT OR UPDATE OR DELETE ON customer_payments FOR EACH ROW EXECUTE FUNCTION log_change();
+CREATE TRIGGER trg_client_settlements_log AFTER INSERT OR UPDATE OR DELETE ON client_settlements FOR EACH ROW EXECUTE FUNCTION log_change();
