@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCar, getStageLogs, getAttachments, getCustomerPayments, getClientById, getCustomerById, updateCustomer } from '../db/cloud'
+import { getCar, getStageLogs, getAttachments, getCustomerPayments, getClientById, getCustomerById, updateCustomer, notifyCustomerUpdated } from '../db/cloud'
 import { STAGE_ORDER, STAGE_LABELS, PAYMENT_METHOD_LABELS, type Car, type CarStageLog, type CarAttachment, type CustomerPayment, type Client, type Customer } from '../types'
 import { formatPrice } from '../utils/format'
 
@@ -52,9 +52,10 @@ export default function ClientCarDetails() {
         full_name_latin: editName.trim(), national_id: editNationalId.trim(),
         address_latin: editAddress, postal_code: editPostal, phone: editPhone, email: editEmail,
       })
+      notifyCustomerUpdated(car.id, car.name, requestClient?.name || '')
       setCustomerModal(false)
       loadData()
-    } catch { /* ignore */ }
+    } catch (e) { alert('خطأ: ' + ((e as any)?.message || String(e))) }
     setSaving(false)
   }
 

@@ -2,7 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { hash, verify } from '../utils/hash'
 import type {
   User, Car, CarFees, CarStageLog, Client, Customer,
-  EditRequest, ChangeLog, Notification, CarStage, CarAttachment, DeleteRequest, CustomerPayment,
+  EditRequest, ChangeLog, Notification, CarStage, CarAttachment, DeleteRequest, CustomerPayment, ClientSettlement,
   Brand, Model,
 } from '../types'
 
@@ -724,4 +724,39 @@ export async function deleteCustomerPayment(id: string, receiptUrl?: string): Pr
   }
   const { error } = await getClient().from('customer_payments').delete().eq('id', id)
   if (error) handleError('deleteCustomerPayment failed', error)
+}
+
+export async function notifyCustomerUpdated(carId: string, carName: string, clientName: string): Promise<void> {
+  try {
+    const users = await getUsers()
+    const targets = users.filter(u => u.role === 'admin' || u.role === 'employee')
+    for (const u of targets) {
+      await createNotification({
+        user_id: u.id,
+        type: 'customer_updated',
+        title: `تم تحديث بيانات المستهلك النهائي للسيارة: ${carName}`,
+        body: `بواسطة الزبون: ${clientName}`,
+        car_id: carId,
+      })
+    }
+  } catch { /* non-critical */ }
+}
+
+export async function getPaymentsByClientId(clientId: string): Promise<CustomerPayment[]> {
+  try {
+    const { data, error } = await getClient().from('customer_payments').select('*, car:cars!customer_payments_car_id_fkey(name, code)').eq('client_id', clientId).order('payment_date', { ascending: false })
+    if (error) return []
+    return ((data as any[]) || []).map(p => {
+      const { car, ...rest } = p
+      return { ...rest, car_name: car?.name } as CustomerPayment & { car_name?: string }
+    })
+  } catch { return [] }
+}
+
+export async function getClientSettlementsByClientId(clientId: string): Promise<ClientSettlement[]> {
+  try {
+    const { data, error } = await getClient().from('client_settlements').select('*').eq('client_id', clientId).order('created_at', { ascending: false })
+    if (error) return []
+    return (data as ClientSettlement[]) || []
+  } catch { return [] }
 }
