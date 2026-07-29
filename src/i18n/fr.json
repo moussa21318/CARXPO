@@ -19,7 +19,8 @@
     "required": "Requis",
     "ok": "OK",
     "view": "Voir",
-    "reason": "Raison"
+    "reason": "Raison",
+    "copy": "Copier"
   },
   "nav": {
     "dashboard": "Tableau de bord",

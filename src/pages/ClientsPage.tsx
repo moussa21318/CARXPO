@@ -17,8 +17,17 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false)
   const [sortKey, setSortKey] = useState<string>('code')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [copied, setCopied] = useState<string | null>(null)
   const [credModal, setCredModal] = useState<{ username: string; password: string; name: string } | null>(null)
-  const [resetModal, setResetModal] = useState<{ userId: string; name: string; password: string } | null>(null)
+  const [resetModal, setResetModal] = useState<{ userId: string; name: string; username: string; password: string } | null>(null)
+
+  const handleCopy = async (text: string, key: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(key)
+      setTimeout(() => setCopied(null), 1500)
+    } catch { /* ignore */ }
+  }
 
   const loadClients = async () => {
     const [cl, cars] = await Promise.all([getAllClients(), getCars()])
@@ -66,8 +75,8 @@ export default function ClientsPage() {
     if (!cl.user_id) return
     setSaving(true)
     try {
-      const password = await resetClientPassword(cl.user_id)
-      setResetModal({ userId: cl.user_id, name: cl.name, password })
+      const { username, password } = await resetClientPassword(cl.user_id)
+      setResetModal({ userId: cl.user_id, name: cl.name, username, password })
     } catch (e) { alert('خطأ: ' + ((e as any)?.message || String(e))) }
     setSaving(false)
   }
@@ -224,9 +233,15 @@ export default function ClientsPage() {
                 <span className="text-gray-500 dark:text-gray-400">{t('client_portal.username_label')}:</span>
                 <span className="font-mono font-medium">{credModal.username}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm items-center">
                 <span className="text-gray-500 dark:text-gray-400">{t('client_portal.password_label')}:</span>
-                <span className="font-mono font-medium">{credModal.password}</span>
+                <span className="font-mono font-medium flex items-center gap-2">
+                  {credModal.password}
+                  <button onClick={() => handleCopy(credModal.password, 'cred-pwd')}
+                    className="text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                    {copied === 'cred-pwd' ? '✓' : t('app.copy')}
+                  </button>
+                </span>
               </div>
             </div>
             <p className="text-xs text-orange-600 dark:text-orange-400">{t('client_portal.save_credentials')}</p>
@@ -243,10 +258,20 @@ export default function ClientsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4">
             <h2 className="text-lg font-semibold text-orange-700 dark:text-orange-400">{t('client_portal.password_reset_success')}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">{t('client_portal.credentials_for', { name: resetModal.name })}</p>
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
               <div className="flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">{t('client_portal.username_label')}:</span>
+                <span className="font-mono font-medium">{resetModal.username}</span>
+              </div>
+              <div className="flex justify-between text-sm items-center">
                 <span className="text-gray-500 dark:text-gray-400">{t('client_portal.password_label')}:</span>
-                <span className="font-mono font-medium">{resetModal.password}</span>
+                <span className="font-mono font-medium flex items-center gap-2">
+                  {resetModal.password}
+                  <button onClick={() => handleCopy(resetModal.password, 'reset-pwd')}
+                    className="text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                    {copied === 'reset-pwd' ? '✓' : t('app.copy')}
+                  </button>
+                </span>
               </div>
             </div>
             <p className="text-xs text-orange-600 dark:text-orange-400">{t('client_portal.save_credentials')}</p>

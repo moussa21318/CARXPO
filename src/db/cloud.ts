@@ -352,12 +352,14 @@ export async function createClientWithUser(name: string, phone: string): Promise
   return { client: client as Client, username, password }
 }
 
-export async function resetClientPassword(userId: string): Promise<string> {
+export async function resetClientPassword(userId: string): Promise<{ username: string; password: string }> {
+  const { data: user, error: fetchErr } = await getClient().from('users').select('username').eq('id', userId).single()
+  if (fetchErr || !user) handleError('resetClientPassword: user not found', fetchErr)
   const password = generateRandomPassword()
   const passwordHash = await hash(password)
   const { error } = await getClient().from('users').update({ password_hash: passwordHash }).eq('id', userId)
   if (error) handleError('resetClientPassword failed', error)
-  return password
+  return { username: user!.username, password }
 }
 
 export async function getUserById(id: string): Promise<User | null> {

@@ -19,7 +19,8 @@
     "required": "Required",
     "ok": "OK",
     "view": "View",
-    "reason": "Reason"
+    "reason": "Reason",
+    "copy": "Copy"
   },
   "nav": {
     "dashboard": "Dashboard",
