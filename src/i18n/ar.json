@@ -15,7 +15,8 @@
     "no": "لا",
     "close": "إغلاق",
     "select": "اختيار",
-    "required": "إجباري"
+    "required": "إجباري",
+    "ok": "موافق"
   },
   "nav": {
     "dashboard": "لوحة القيادة",
@@ -323,5 +324,16 @@
     "save_credentials": "انسخ البيانات الآن، لن تظهر مرة أخرى.",
     "reset_password": "إعادة تعيين كلمة المرور",
     "password_reset_success": "تم إعادة تعيين كلمة المرور"
+  },
+  "client_account": {
+    "title": "حسابي",
+    "username": "اسم المستخدم",
+    "change_password": "تغيير كلمة المرور",
+    "current_password": "كلمة المرور الحالية",
+    "new_password": "كلمة المرور الجديدة",
+    "confirm_password": "تأكيد كلمة المرور",
+    "password_changed": "تم تغيير كلمة المرور بنجاح",
+    "password_mismatch": "كلمتا المرور غير متطابقتين",
+    "wrong_password": "كلمة المرور الحالية غير صحيحة"
   }
 }

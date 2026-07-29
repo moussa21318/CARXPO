@@ -27,6 +27,7 @@ export default function MainLayout() {
   const links = isClient ? [
     { to: '/', label: 'nav.dashboard', icon: '📊' },
     { to: '/client/cars', label: 'client_portal.my_cars', icon: '🚗' },
+    { to: '/client/account', label: 'client_account.title', icon: '⚙️' },
     { to: '/notifications', label: 'nav.notifications', icon: '🔔', badge: unread },
   ] : [
     { to: '/', label: 'nav.dashboard', icon: '📊' },

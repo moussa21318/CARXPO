@@ -15,7 +15,8 @@
     "no": "No",
     "close": "Close",
     "select": "Select",
-    "required": "Required"
+    "required": "Required",
+    "ok": "OK"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -322,5 +323,16 @@
     "save_credentials": "Copy the credentials now. They will not be shown again.",
     "reset_password": "Reset Password",
     "password_reset_success": "Password has been reset"
+  },
+  "client_account": {
+    "title": "My Account",
+    "username": "Username",
+    "change_password": "Change Password",
+    "current_password": "Current Password",
+    "new_password": "New Password",
+    "confirm_password": "Confirm Password",
+    "password_changed": "Password changed successfully",
+    "password_mismatch": "Passwords do not match",
+    "wrong_password": "Current password is incorrect"
   }
 }

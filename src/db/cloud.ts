@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import { hash } from '../utils/hash'
+import { hash, verify } from '../utils/hash'
 import type {
   User, Car, CarFees, CarStageLog, Client, Customer,
   EditRequest, ChangeLog, Notification, CarStage, CarAttachment, DeleteRequest, CustomerPayment,
@@ -358,6 +358,39 @@ export async function resetClientPassword(userId: string): Promise<string> {
   const { error } = await getClient().from('users').update({ password_hash: passwordHash }).eq('id', userId)
   if (error) handleError('resetClientPassword failed', error)
   return password
+}
+
+export async function getUserById(id: string): Promise<User | null> {
+  try {
+    const { data, error } = await getClient().from('users').select('*').eq('id', id).single()
+    if (error) return null
+    return data as User | null
+  } catch { return null }
+}
+
+export async function createUserForExistingClient(clientId: string, name: string): Promise<{ username: string; password: string }> {
+  const lastCode = await getLastClientCode()
+  const code = generateNextClientCode(lastCode)
+  const password = generateRandomPassword()
+  const passwordHash = await hash(password)
+  const username = `client_${code}`
+  const { data: user, error: userErr } = await getClient().from('users').insert({
+    username, password_hash: passwordHash, role: 'client', full_name: name, is_active: true,
+  }).select().single()
+  if (userErr) handleError('createUserForExistingClient insert user failed', userErr)
+  const { error: clientErr } = await getClient().from('clients').update({ user_id: user.id }).eq('id', clientId)
+  if (clientErr) handleError('createUserForExistingClient update client failed', clientErr)
+  return { username, password }
+}
+
+export async function changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  const { data: user, error } = await getClient().from('users').select('password_hash').eq('id', userId).single()
+  if (error || !user) throw new Error('User not found')
+  const ok = await verify(currentPassword, user.password_hash)
+  if (!ok) throw new Error('Wrong password')
+  const passwordHash = await hash(newPassword)
+  const { error: updateErr } = await getClient().from('users').update({ password_hash: passwordHash }).eq('id', userId)
+  if (updateErr) handleError('changePassword failed', updateErr)
 }
 
 // --- Customers ---

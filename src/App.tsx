@@ -19,6 +19,7 @@ import BrandsPage from './pages/BrandsPage'
 import ClientDashboard from './pages/ClientDashboard'
 import ClientCarsList from './pages/ClientCarsList'
 import ClientCarDetails from './pages/ClientCarDetails'
+import ClientAccount from './pages/ClientAccount'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -39,6 +40,7 @@ function AppRoutes() {
           <Route path="/" element={<ClientDashboard />} />
           <Route path="/client/cars" element={<ClientCarsList />} />
           <Route path="/client/cars/:id" element={<ClientCarDetails />} />
+          <Route path="/client/account" element={<ClientAccount />} />
           <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
       ) : (

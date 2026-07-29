@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { getAllClients, updateClient, deleteClient, getCars, createClientWithUser, resetClientPassword } from '../db/cloud'
+import { getAllClients, updateClient, deleteClient, getCars, createClientWithUser, createUserForExistingClient, resetClientPassword } from '../db/cloud'
 import type { Client } from '../types'
 
 export default function ClientsPage() {
@@ -68,7 +68,17 @@ export default function ClientsPage() {
     try {
       const password = await resetClientPassword(cl.user_id)
       setResetModal({ userId: cl.user_id, name: cl.name, password })
-    } catch { /* ignore */ }
+    } catch (e) { alert('خطأ: ' + ((e as any)?.message || String(e))) }
+    setSaving(false)
+  }
+
+  const handleCreateAccount = async (cl: Client) => {
+    setSaving(true)
+    try {
+      const result = await createUserForExistingClient(cl.id, cl.name)
+      setCredModal({ username: result.username, password: result.password, name: cl.name })
+      await loadClients()
+    } catch (e) { alert('خطأ: ' + ((e as any)?.message || String(e))) }
     setSaving(false)
   }
 
@@ -157,7 +167,8 @@ export default function ClientsPage() {
                       <button onClick={() => handleResetPassword(cl)}
                         className="text-orange-500 hover:text-orange-700 text-xs px-1" title={t('client_portal.reset_password')}>🔑</button>
                     ) : (
-                      <span className="text-gray-400 text-xs">—</span>
+                      <button onClick={() => handleCreateAccount(cl)}
+                        className="text-green-500 hover:text-green-700 text-xs px-1" title={t('clients.add')}>🆕</button>
                     )}
                   </td>
                   <td className="p-3 text-center text-sm whitespace-nowrap">
