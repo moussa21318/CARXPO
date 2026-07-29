@@ -23,7 +23,12 @@ export default function MainLayout() {
 
   const isRtl = i18n.language === 'ar'
 
-  const links = [
+  const isClient = user?.role === 'client'
+  const links = isClient ? [
+    { to: '/', label: 'nav.dashboard', icon: '📊' },
+    { to: '/client/cars', label: 'client_portal.my_cars', icon: '🚗' },
+    { to: '/notifications', label: 'nav.notifications', icon: '🔔', badge: unread },
+  ] : [
     { to: '/', label: 'nav.dashboard', icon: '📊' },
     { to: '/cars', label: 'nav.cars', icon: '🚗' },
     { to: '/payments', label: 'nav.payments', icon: '💰' },

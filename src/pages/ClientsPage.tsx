@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { getAllClients, upsertClient, updateClient, deleteClient, getCars } from '../db/cloud'
+import { getAllClients, updateClient, deleteClient, getCars, createClientWithUser, resetClientPassword } from '../db/cloud'
 import type { Client } from '../types'
 
 export default function ClientsPage() {
@@ -17,6 +17,8 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false)
   const [sortKey, setSortKey] = useState<string>('code')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [credModal, setCredModal] = useState<{ username: string; password: string; name: string } | null>(null)
+  const [resetModal, setResetModal] = useState<{ userId: string; name: string; password: string } | null>(null)
 
   const loadClients = async () => {
     const [cl, cars] = await Promise.all([getAllClients(), getCars()])
@@ -45,7 +47,8 @@ export default function ClientsPage() {
       if (editId) {
         await updateClient(editId, { name: modalName.trim(), phone: modalPhone })
       } else {
-        await upsertClient(modalName.trim(), modalPhone)
+        const result = await createClientWithUser(modalName.trim(), modalPhone)
+        setCredModal({ username: result.username, password: result.password, name: result.client.name })
       }
       setModalOpen(false)
       await loadClients()
@@ -57,6 +60,16 @@ export default function ClientsPage() {
     if (!window.confirm(t('clients.delete_confirm', `${t('app.delete')} ${cl.name}?`))) return
     await deleteClient(cl.id)
     await loadClients()
+  }
+
+  const handleResetPassword = async (cl: Client) => {
+    if (!cl.user_id) return
+    setSaving(true)
+    try {
+      const password = await resetClientPassword(cl.user_id)
+      setResetModal({ userId: cl.user_id, name: cl.name, password })
+    } catch { /* ignore */ }
+    setSaving(false)
   }
 
   const handleSort = (key: string) => {
@@ -75,6 +88,7 @@ export default function ClientsPage() {
     { key: 'phone', labelKey: 'clients.phone', sortable: true },
     { key: 'created_at', labelKey: 'clients.created_at', sortable: true },
     { key: 'cars_count', labelKey: 'clients.cars_count', sortable: true },
+    { key: 'account', labelKey: 'clients.account', sortable: false },
     { key: 'edit', labelKey: 'app.edit', sortable: false },
   ]
   const displayCols = colDefs.map(c => ({ ...c, label: t(c.labelKey) }))
@@ -112,7 +126,7 @@ export default function ClientsPage() {
         <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('clients.no_data')}</div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[600px]">
+          <table className="w-full min-w-[700px]">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
                 {displayCols.map(c => (
@@ -137,6 +151,14 @@ export default function ClientsPage() {
                       className="text-blue-600 dark:text-blue-400 hover:underline">
                       {cl.carCount}
                     </button>
+                  </td>
+                  <td className="p-3 text-center text-sm">
+                    {cl.user_id ? (
+                      <button onClick={() => handleResetPassword(cl)}
+                        className="text-orange-500 hover:text-orange-700 text-xs px-1" title={t('client_portal.reset_password')}>🔑</button>
+                    ) : (
+                      <span className="text-gray-400 text-xs">—</span>
+                    )}
                   </td>
                   <td className="p-3 text-center text-sm whitespace-nowrap">
                     <button onClick={() => openEdit(cl)}
@@ -177,6 +199,50 @@ export default function ClientsPage() {
                 {saving ? t('app.loading') : t('app.save')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {credModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-green-700 dark:text-green-400">{t('client_portal.credentials_modal_title')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('client_portal.credentials_for', { name: credModal.name })}</p>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">{t('client_portal.username_label')}:</span>
+                <span className="font-mono font-medium">{credModal.username}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">{t('client_portal.password_label')}:</span>
+                <span className="font-mono font-medium">{credModal.password}</span>
+              </div>
+            </div>
+            <p className="text-xs text-orange-600 dark:text-orange-400">{t('client_portal.save_credentials')}</p>
+            <button onClick={() => setCredModal(null)}
+              className="w-full p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors">
+              {t('app.ok')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {resetModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-orange-700 dark:text-orange-400">{t('client_portal.password_reset_success')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('client_portal.credentials_for', { name: resetModal.name })}</p>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">{t('client_portal.password_label')}:</span>
+                <span className="font-mono font-medium">{resetModal.password}</span>
+              </div>
+            </div>
+            <p className="text-xs text-orange-600 dark:text-orange-400">{t('client_portal.save_credentials')}</p>
+            <button onClick={() => setResetModal(null)}
+              className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors">
+              {t('app.ok')}
+            </button>
           </div>
         </div>
       )}

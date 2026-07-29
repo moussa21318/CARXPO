@@ -19,7 +19,7 @@ DROP TABLE IF EXISTS users CASCADE;
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   username TEXT UNIQUE NOT NULL,
-  role TEXT NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'employee')),
+  role TEXT NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'employee', 'client')),
   full_name TEXT NOT NULL,
   is_active BOOLEAN DEFAULT true,
   password_hash TEXT NOT NULL,
@@ -33,6 +33,7 @@ CREATE TABLE clients (
   code VARCHAR(3) UNIQUE,
   name TEXT NOT NULL,
   phone TEXT DEFAULT '',
+  user_id UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS clients_name_phone_idx ON clients (name, phone);
@@ -235,6 +236,7 @@ CREATE TABLE notifications (
 
 CREATE INDEX IF NOT EXISTS idx_cars_created_at ON cars(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_cars_client_id ON cars(client_id);
+CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id);
 CREATE INDEX IF NOT EXISTS idx_cars_customer_id ON cars(customer_id);
 CREATE INDEX IF NOT EXISTS idx_car_stage_logs_car_id ON car_stage_logs(car_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);

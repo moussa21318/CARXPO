@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { hash } from '../utils/hash'
 import type {
   User, Car, CarFees, CarStageLog, Client, Customer,
   EditRequest, ChangeLog, Notification, CarStage, CarAttachment, DeleteRequest, CustomerPayment,
@@ -319,6 +320,44 @@ export async function updateClient(id: string, payload: { name?: string; phone?:
 export async function deleteClient(id: string): Promise<void> {
   const { error } = await getClient().from('clients').delete().eq('id', id)
   if (error) handleError('deleteClient failed', error)
+}
+
+export function generateRandomPassword(length = 8): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
+
+export async function getClientByUserId(userId: string): Promise<Client | null> {
+  try {
+    const { data, error } = await getClient().from('clients').select('*').eq('user_id', userId).maybeSingle()
+    if (error) return null
+    return data as Client | null
+  } catch { return null }
+}
+
+export async function createClientWithUser(name: string, phone: string): Promise<{ client: Client; username: string; password: string }> {
+  const lastCode = await getLastClientCode()
+  const code = generateNextClientCode(lastCode)
+  const password = generateRandomPassword()
+  const passwordHash = await hash(password)
+  const username = `client_${code}`
+  const { data: user, error: userErr } = await getClient().from('users').insert({
+    username, password_hash: passwordHash, role: 'client', full_name: name, is_active: true,
+  }).select().single()
+  if (userErr) handleError('createClientWithUser insert user failed', userErr)
+  const { data: client, error: clientErr } = await getClient().from('clients').insert({
+    name, phone, code, user_id: user.id,
+  }).select().single()
+  if (clientErr) handleError('createClientWithUser insert client failed', clientErr)
+  return { client: client as Client, username, password }
+}
+
+export async function resetClientPassword(userId: string): Promise<string> {
+  const password = generateRandomPassword()
+  const passwordHash = await hash(password)
+  const { error } = await getClient().from('users').update({ password_hash: passwordHash }).eq('id', userId)
+  if (error) handleError('resetClientPassword failed', error)
+  return password
 }
 
 // --- Customers ---

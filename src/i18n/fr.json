@@ -289,6 +289,7 @@
     "created_at": "Date d'ajout",
     "search": "Rechercher par nom, téléphone ou code",
     "cars_count": "Nombre de voitures",
+    "account": "Compte",
     "no_data": "Aucun client trouvé"
   },
   "customers": {
@@ -307,5 +308,19 @@
     "search": "Rechercher par nom, ID, téléphone ou code",
     "cars_count": "Nombre de voitures",
     "no_data": "Aucun client final trouvé"
+  },
+  "client_portal": {
+    "title": "Portail Client",
+    "welcome": "Bienvenue {name}",
+    "my_cars": "Mes Voitures",
+    "no_cars": "Aucune voiture enregistrée sous votre nom",
+    "edit_customer": "Données du consommateur final",
+    "credentials_modal_title": "Compte de connexion créé",
+    "credentials_for": "Identifiants de connexion pour le client : {name}",
+    "username_label": "Nom d'utilisateur",
+    "password_label": "Mot de passe",
+    "save_credentials": "Copiez les identifiants maintenant. Ils ne seront plus affichés.",
+    "reset_password": "Réinitialiser le mot de passe",
+    "password_reset_success": "Le mot de passe a été réinitialisé"
   }
 }

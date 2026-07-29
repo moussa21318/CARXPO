@@ -1,5 +1,5 @@
 export type CarStage = 'request' | 'deposit' | 'purchase' | 'shipping_prep' | 'shipping'
-export type UserRole = 'admin' | 'employee'
+export type UserRole = 'admin' | 'employee' | 'client'
 export type EditRequestStatus = 'pending' | 'approved' | 'rejected'
 export type DeleteRequestStatus = 'pending' | 'approved' | 'rejected'
 export type NotificationType = 'car_added' | 'car_updated' | 'car_deleted' | 'edit_requested' | 'edit_approved' | 'edit_rejected' | 'stage_changed' | 'car_confirmed' | 'delete_requested' | 'delete_approved' | 'delete_rejected'
@@ -16,6 +16,7 @@ export interface User {
   password_hash: string
   created_at: string
   updated_at: string
+  clientId?: string
 }
 
 export interface Client {
@@ -23,6 +24,7 @@ export interface Client {
   code: string | null
   name: string
   phone: string
+  user_id?: string | null
   created_at: string
 }
 

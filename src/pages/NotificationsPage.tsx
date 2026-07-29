@@ -22,11 +22,6 @@ export default function NotificationsPage() {
 
   useEffect(() => { load() }, [user])
 
-  const handleMarkRead = async (id: string) => {
-    await markNotificationRead(id)
-    load()
-  }
-
   const handleMarkAll = async () => {
     if (!user) return
     await markAllNotificationsRead(user.id)

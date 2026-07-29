@@ -289,6 +289,7 @@
     "created_at": "Created At",
     "search": "Search by name, phone or code",
     "cars_count": "Cars Count",
+    "account": "Account",
     "no_data": "No clients found"
   },
   "customers": {
@@ -307,5 +308,19 @@
     "search": "Search by name, ID, phone or code",
     "cars_count": "Cars Count",
     "no_data": "No final customers found"
+  },
+  "client_portal": {
+    "title": "Client Portal",
+    "welcome": "Welcome {name}",
+    "my_cars": "My Cars",
+    "no_cars": "No cars registered under your name",
+    "edit_customer": "End Customer Data",
+    "credentials_modal_title": "Login account created",
+    "credentials_for": "Login credentials for client: {name}",
+    "username_label": "Username",
+    "password_label": "Password",
+    "save_credentials": "Copy the credentials now. They will not be shown again.",
+    "reset_password": "Reset Password",
+    "password_reset_success": "Password has been reset"
   }
 }
