@@ -6,6 +6,7 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
+    "add": "Add",
     "back": "Back",
     "confirm": "Confirm",
     "search": "Search...",
@@ -314,17 +315,18 @@
   },
   "client_portal": {
     "title": "Client Portal",
-    "welcome": "Welcome {name}",
+    "welcome": "Welcome {{name}}",
     "my_cars": "My Cars",
     "no_cars": "No cars registered under your name",
     "edit_customer": "End Customer Data",
     "credentials_modal_title": "Login account created",
-    "credentials_for": "Login credentials for client: {name}",
+    "credentials_for": "Login credentials for client: {{name}}",
     "username_label": "Username",
     "password_label": "Password",
     "save_credentials": "Copy the credentials now. They will not be shown again.",
     "reset_password": "Reset Password",
-    "password_reset_success": "Password has been reset"
+    "password_reset_success": "Password has been reset",
+    "no_customer": "No end customer added yet"
   },
   "client_account": {
     "title": "My Account",

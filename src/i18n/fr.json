@@ -6,6 +6,7 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "edit": "Modifier",
+    "add": "Ajouter",
     "back": "Retour",
     "confirm": "Confirmer",
     "search": "Rechercher...",
@@ -314,17 +315,18 @@
   },
   "client_portal": {
     "title": "Portail Client",
-    "welcome": "Bienvenue {name}",
+    "welcome": "Bienvenue {{name}}",
     "my_cars": "Mes Voitures",
     "no_cars": "Aucune voiture enregistrée sous votre nom",
     "edit_customer": "Données du consommateur final",
     "credentials_modal_title": "Compte de connexion créé",
-    "credentials_for": "Identifiants de connexion pour le client : {name}",
+    "credentials_for": "Identifiants de connexion pour le client : {{name}}",
     "username_label": "Nom d'utilisateur",
     "password_label": "Mot de passe",
     "save_credentials": "Copiez les identifiants maintenant. Ils ne seront plus affichés.",
     "reset_password": "Réinitialiser le mot de passe",
-    "password_reset_success": "Le mot de passe a été réinitialisé"
+    "password_reset_success": "Le mot de passe a été réinitialisé",
+    "no_customer": "Aucun consommateur final ajouté pour l'instant"
   },
   "client_account": {
     "title": "Mon Compte",

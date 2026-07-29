@@ -6,6 +6,7 @@
     "cancel": "إلغاء",
     "delete": "حذف",
     "edit": "تعديل",
+    "add": "إضافة",
     "back": "رجوع",
     "confirm": "تأكيد",
     "search": "بحث...",
@@ -315,17 +316,18 @@
   },
   "client_portal": {
     "title": "بوابة الزبون",
-    "welcome": "مرحباً {name}",
+    "welcome": "مرحباً {{name}}",
     "my_cars": "سياراتي",
     "no_cars": "لا توجد سيارات مسجلة باسمك",
     "edit_customer": "بيانات المستهلك النهائي",
     "credentials_modal_title": "تم إنشاء حساب الدخول",
-    "credentials_for": "بيانات الدخول للزبون: {name}",
+    "credentials_for": "بيانات الدخول للزبون: {{name}}",
     "username_label": "اسم المستخدم",
     "password_label": "كلمة المرور",
     "save_credentials": "انسخ البيانات الآن، لن تظهر مرة أخرى.",
     "reset_password": "إعادة تعيين كلمة المرور",
-    "password_reset_success": "تم إعادة تعيين كلمة المرور"
+    "password_reset_success": "تم إعادة تعيين كلمة المرور",
+    "no_customer": "لم تتم إضافة مستهلك نهائي بعد"
   },
   "client_account": {
     "title": "حسابي",

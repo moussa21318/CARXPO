@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCar, getStageLogs, getAttachments, getCustomerPayments, getClientById, getCustomerById, updateCustomer, notifyCustomerUpdated } from '../db/cloud'
+import { getCar, getStageLogs, getAttachments, getCustomerPayments, getClientById, getCustomerById, updateCustomer, upsertCustomer, updateCar, notifyCustomerUpdated } from '../db/cloud'
 import { STAGE_ORDER, STAGE_LABELS, PAYMENT_METHOD_LABELS, type Car, type CarStageLog, type CarAttachment, type CustomerPayment, type Client, type Customer } from '../types'
 import { formatPrice } from '../utils/format'
 
@@ -38,20 +38,27 @@ export default function ClientCarDetails() {
     setAttachments(attach.map(a => ({ ...a, publicUrl: '' })))
     setPayments(pays)
     if (c.client_id) getClientById(c.client_id).then(cl => setRequestClient(cl)).catch(() => {})
-    if (c.customer_id) getCustomerById(c.customer_id).then(cu => { setCustomer(cu); setEditName(cu?.full_name_latin || ''); setEditNationalId(cu?.national_id || ''); setEditAddress(cu?.address_latin || ''); setEditPostal(cu?.postal_code || ''); setEditPhone(cu?.phone || ''); setEditEmail(cu?.email || '') }).catch(() => {})
+    getCustomerById(c.customer_id || '').then(cu => { setCustomer(cu); setEditName(cu?.full_name_latin || ''); setEditNationalId(cu?.national_id || ''); setEditAddress(cu?.address_latin || ''); setEditPostal(cu?.postal_code || ''); setEditPhone(cu?.phone || ''); setEditEmail(cu?.email || '') }).catch(() => {})
     setLoading(false)
   }
 
   useEffect(() => { loadData() }, [id, clientId])
 
   const handleEditCustomer = async () => {
-    if (!car?.customer_id || !editName.trim() || !editNationalId.trim() || saving) return
+    if (!editName.trim() || !editNationalId.trim() || saving || !car) return
     setSaving(true)
     try {
-      await updateCustomer(car.customer_id, {
-        full_name_latin: editName.trim(), national_id: editNationalId.trim(),
-        address_latin: editAddress, postal_code: editPostal, phone: editPhone, email: editEmail,
-      })
+      let custId = car.customer_id
+      if (!custId) {
+        const newCust = await upsertCustomer(editName.trim(), editNationalId.trim(), editAddress, editPostal, editPhone, editEmail)
+        custId = newCust.id
+        await updateCar(car.id, { customer_id: custId })
+      } else {
+        await updateCustomer(custId, {
+          full_name_latin: editName.trim(), national_id: editNationalId.trim(),
+          address_latin: editAddress, postal_code: editPostal, phone: editPhone, email: editEmail,
+        })
+      }
       notifyCustomerUpdated(car.id, car.name, requestClient?.name || '')
       setCustomerModal(false)
       loadData()
@@ -108,17 +115,26 @@ export default function ClientCarDetails() {
         </div>
       )}
 
-      {customer && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">{t('client_portal.edit_customer')}</h2>
-            {canEditCustomer && (
-              <button onClick={() => { setEditName(customer.full_name_latin); setEditNationalId(customer.national_id); setEditAddress(customer.address_latin); setEditPostal(customer.postal_code); setEditPhone(customer.phone); setEditEmail(customer.email); setCustomerModal(true) }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-                ✎ {t('app.edit')}
-              </button>
-            )}
-          </div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold">{t('client_portal.edit_customer')}</h2>
+          {canEditCustomer && (
+            <button onClick={() => {
+              if (customer) {
+                setEditName(customer.full_name_latin); setEditNationalId(customer.national_id)
+                setEditAddress(customer.address_latin); setEditPostal(customer.postal_code)
+                setEditPhone(customer.phone); setEditEmail(customer.email)
+              } else {
+                setEditName(''); setEditNationalId(''); setEditAddress(''); setEditPostal(''); setEditPhone(''); setEditEmail('')
+              }
+              setCustomerModal(true)
+            }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+              ✎ {customer ? t('app.edit') : t('app.add')}
+            </button>
+          )}
+        </div>
+        {customer ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div><span className="text-gray-500 dark:text-gray-400">{t('customers.name')}:</span> <span>{customer.full_name_latin}</span></div>
             <div><span className="text-gray-500 dark:text-gray-400">{t('customers.national_id')}:</span> <span>{customer.national_id}</span></div>
@@ -127,8 +143,10 @@ export default function ClientCarDetails() {
             <div><span className="text-gray-500 dark:text-gray-400">{t('customers.phone')}:</span> <span>{customer.phone || '-'}</span></div>
             <div><span className="text-gray-500 dark:text-gray-400">{t('customers.email')}:</span> <span>{customer.email || '-'}</span></div>
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t('client_portal.no_customer')}</p>
+        )}
+      </div>
 
       {attachments.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
