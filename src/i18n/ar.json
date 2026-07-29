@@ -282,6 +282,9 @@
     "credit_card": "بطاقة ائتمان",
     "settlement": "تسوية حذف"
   },
+  "settlements": {
+    "deletion": "تسوية حذف"
+  },
   "clients": {
     "title": "إدارة الزبائن",
     "add": "إضافة زبون جديد",

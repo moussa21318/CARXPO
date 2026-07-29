@@ -282,6 +282,9 @@
     "credit_card": "Carte de crédit",
     "settlement": "Règlement de suppression"
   },
+  "settlements": {
+    "deletion": "Règlement de suppression"
+  },
   "clients": {
     "title": "Gérer les clients",
     "add": "Ajouter un client",

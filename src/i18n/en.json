@@ -282,6 +282,9 @@
     "credit_card": "Credit Card",
     "settlement": "Deletion Settlement"
   },
+  "settlements": {
+    "deletion": "Deletion Settlement"
+  },
   "clients": {
     "title": "Manage Clients",
     "add": "Add Client",

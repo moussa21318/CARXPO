@@ -774,3 +774,11 @@ export async function getClientSettlementsByClientId(clientId: string): Promise<
     return (data as ClientSettlement[]) || []
   } catch { return [] }
 }
+
+export async function getAllSettlements(): Promise<ClientSettlement[]> {
+  try {
+    const { data, error } = await getClient().from('client_settlements').select('*').order('created_at', { ascending: false })
+    if (error) return []
+    return (data as ClientSettlement[]) || []
+  } catch { return [] }
+}

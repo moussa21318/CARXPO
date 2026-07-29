@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, getAllClients, getAllCarFees, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient, upsertClient } from '../db/cloud'
+import { getCars, getAllClients, getAllCarFees, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient, upsertClient, getAllSettlements } from '../db/cloud'
 import { PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type Client, type CustomerPayment, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 import { uploadFile } from '../utils/upload'
@@ -77,8 +77,8 @@ export default function PaymentsPage() {
 
   const loadData = async () => {
     setLoading(true)
-    const [cars, clients, allFees, allPayments] = await Promise.all([
-      getCars(), getAllClients(), getAllCarFees(), getAllCustomerPayments(),
+    const [cars, clients, allFees, allPayments, allSettlements] = await Promise.all([
+      getCars(), getAllClients(), getAllCarFees(), getAllCustomerPayments(), getAllSettlements(),
     ])
     setAllCars(cars)
     setAllClients(clients)
@@ -163,6 +163,24 @@ export default function PaymentsPage() {
 
     for (const payment of allPayments) {
       addPaymentRow(payment)
+    }
+
+    for (const s of allSettlements) {
+      const feeLabelKey = feeKeyLabels[s.fee_type as keyof typeof feeKeyLabels] || s.fee_type
+      rows.push({
+        id: `stl_${s.id}`,
+        date: s.created_at.slice(0, 10),
+        clientName: s.client_id ? (clientMap.get(s.client_id)?.name || '') : '',
+        clientId: s.client_id,
+        carId: s.car_id,
+        carCode: feeLabelKey,
+        carName: s.car_name || null,
+        designationKey: 'settlements.deletion',
+        designation: '',
+        debit: s.amount,
+        credit: 0,
+        isGeneral: false,
+      })
     }
 
     rows.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
