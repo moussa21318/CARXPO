@@ -60,17 +60,6 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-8">
-        <h2 className="text-lg font-semibold mb-4">🔍 تتبع الشحنة - CIG Shipping</h2>
-        <iframe
-          src="https://www.cigbooking.com/track"
-          title="CIG Shipping Tracking"
-          className="w-full rounded-lg border dark:border-gray-600"
-          style={{ height: '500px' }}
-          loading="lazy"
-        />
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.total_cars')}</p>

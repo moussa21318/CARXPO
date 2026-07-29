@@ -52,7 +52,7 @@ export default function ClientsPage() {
       }
       setModalOpen(false)
       await loadClients()
-    } catch { /* ignore */ }
+    } catch (e) { alert('خطأ: ' + ((e as any)?.message || String(e))) }
     setSaving(false)
   }
 
