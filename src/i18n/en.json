@@ -16,7 +16,8 @@
     "close": "Close",
     "select": "Select",
     "required": "Required",
-    "ok": "OK"
+    "ok": "OK",
+    "view": "View"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -147,7 +148,8 @@
     "manage_delete_requests": "Manage Deletion Requests",
     "no_delete_requests": "No deletion requests",
     "prev_page": "Previous",
-    "next_page": "Next"
+    "next_page": "Next",
+    "activity_log": "Activity Log"
   },
   "brands": {
     "title": "Brands & Models",

@@ -744,7 +744,21 @@ export async function notifyCustomerUpdated(carId: string, carName: string, clie
 
 export async function getPaymentsByClientId(clientId: string): Promise<CustomerPayment[]> {
   try {
-    const { data, error } = await getClient().from('customer_payments').select('*, car:cars!customer_payments_car_id_fkey(name, code)').eq('client_id', clientId).order('payment_date', { ascending: false })
+    const { data, error } = await getClient().from('customer_payments').select('*').eq('client_id', clientId).order('payment_date', { ascending: false })
+    if (error) return []
+    return (data as CustomerPayment[]) || []
+  } catch { return [] }
+}
+
+export async function getPaymentsForClient(clientId: string, carIds: string[]): Promise<(CustomerPayment & { car_name?: string })[]> {
+  try {
+    let query = getClient().from('customer_payments').select('*, car:cars!customer_payments_car_id_fkey(name, code)')
+    if (carIds.length > 0) {
+      query = query.or(`client_id.eq.${clientId},car_id.in.(${carIds.join(',')})`)
+    } else {
+      query = query.eq('client_id', clientId)
+    }
+    const { data, error } = await query.order('payment_date', { ascending: false })
     if (error) return []
     return ((data as any[]) || []).map(p => {
       const { car, ...rest } = p

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCarFees, getPaymentsByClientId, getClientSettlementsByClientId, getCars } from '../db/cloud'
+import { getCarFees, getPaymentsForClient, getClientSettlementsByClientId, getCars } from '../db/cloud'
 import { FEE_LABELS, PAYMENT_METHOD_LABELS, type CarFees } from '../types'
 import { formatPrice } from '../utils/format'
 
@@ -40,10 +40,12 @@ export default function ClientPayments() {
   useEffect(() => {
     if (!clientId) { setLoading(false); return }
     const load = async () => {
-      const [cars, payments, settlements] = await Promise.all([
-        getCars(), getPaymentsByClientId(clientId), getClientSettlementsByClientId(clientId),
+      const [cars, settlements] = await Promise.all([
+        getCars(), getClientSettlementsByClientId(clientId),
       ])
       const myCars = cars.filter(c => c.client_id === clientId)
+      const carIds = myCars.map(c => c.id)
+      const payments = await getPaymentsForClient(clientId, carIds)
       const result: Row[] = []
 
       for (const car of myCars) {
