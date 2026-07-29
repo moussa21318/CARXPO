@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCars, getAllClients, getAllCarFees, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient, upsertClient, getAllSettlements } from '../db/cloud'
-import { PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type Client, type CustomerPayment, type PaymentMethod } from '../types'
+import { getCars, getAllClients, getAllCarFees, getAllCustomerPayments, createCustomerPayment, updateCustomerPayment, deleteCustomerPayment, getClient, upsertClient, getAllSettlements, deleteSettlement, updateSettlement } from '../db/cloud'
+import { PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type Client, type CustomerPayment, type ClientSettlement, type PaymentMethod } from '../types'
 import { formatPrice } from '../utils/format'
 import { uploadFile } from '../utils/upload'
 import * as XLSX from 'xlsx'
@@ -24,6 +24,7 @@ interface TransactionRow {
   paymentReceipt?: string
   isGeneral: boolean
   sourcePayment?: CustomerPayment
+  sourceSettlement?: ClientSettlement
 }
 
 interface ClientDetail {
@@ -64,6 +65,11 @@ export default function PaymentsPage() {
   const [editNotes, setEditNotes] = useState('')
   const [editReceipt, setEditReceipt] = useState<File | null>(null)
 
+  const [editSettlement, setEditSettlement] = useState<ClientSettlement | null>(null)
+  const [editSettAmount, setEditSettAmount] = useState(0)
+  const [editSettFeeType, setEditSettFeeType] = useState('')
+  const [editSettReason, setEditSettReason] = useState('')
+
   const [filterClient, setFilterClient] = useState('')
   const [filterCar, setFilterCar] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -74,6 +80,15 @@ export default function PaymentsPage() {
 
   const [exportDateFrom, setExportDateFrom] = useState('')
   const [exportDateTo, setExportDateTo] = useState('')
+
+  const feeKeyLabels: Record<string, string> = {
+    deposit: 'car.deposit_fee',
+    deposit_02: 'car.deposit_02',
+    transport_01: 'car.transport_01',
+    parking: 'car.parking',
+    other_fees: 'car.other_fees',
+    transport_02: 'car.transport_02',
+  }
 
   const loadData = async () => {
     setLoading(true)
@@ -129,14 +144,6 @@ export default function PaymentsPage() {
       })
     }
 
-    const feeKeyLabels: Record<string, string> = {
-      deposit: 'car.deposit_fee',
-      deposit_02: 'car.deposit_02',
-      transport_01: 'car.transport_01',
-      parking: 'car.parking',
-      other_fees: 'car.other_fees',
-      transport_02: 'car.transport_02',
-    }
     const feeDateKeys: Record<string, string> = {
       deposit: 'deposit_date',
       deposit_02: 'deposit_02_date',
@@ -180,6 +187,7 @@ export default function PaymentsPage() {
         debit: s.amount,
         credit: 0,
         isGeneral: false,
+        sourceSettlement: s,
       })
     }
 
@@ -270,6 +278,23 @@ export default function PaymentsPage() {
     setEditNotes(payment.notes)
     setEditReceipt(null)
   }
+  const openEditSettlement = (s: ClientSettlement) => {
+    setEditSettlement(s)
+    setEditSettAmount(s.amount)
+    setEditSettFeeType(s.fee_type)
+    setEditSettReason(s.reason)
+  }
+
+  const handleUpdateSettlement = async () => {
+    if (!editSettlement) return
+    await updateSettlement(editSettlement.id, {
+      amount: editSettAmount,
+      fee_type: editSettFeeType,
+      reason: editSettReason,
+    })
+    setEditSettlement(null)
+    loadData()
+  }
 
   const handleUpdatePayment = async () => {
     if (!editPayment) return
@@ -297,6 +322,16 @@ export default function PaymentsPage() {
       setDetailClient({
         ...detailClient,
         rows: detailClient.rows.filter(r => r.sourcePayment?.id !== payment.id),
+      })
+    }
+  }
+  const handleDeleteSettlement = async (s: ClientSettlement) => {
+    await deleteSettlement(s.id)
+    loadData()
+    if (detailOpen && detailClient) {
+      setDetailClient({
+        ...detailClient,
+        rows: detailClient.rows.filter(r => r.sourceSettlement?.id !== s.id),
       })
     }
   }
@@ -796,6 +831,14 @@ export default function PaymentsPage() {
                                     className="text-red-500 hover:text-red-700 text-xs px-1">✕</button>
                                 </>
                               )}
+                              {r.sourceSettlement && (
+                                <>
+                                  <button onClick={() => openEditSettlement(r.sourceSettlement!)}
+                                    className="text-blue-500 hover:text-blue-700 text-xs px-1">✎</button>
+                                  <button onClick={() => handleDeleteSettlement(r.sourceSettlement!)}
+                                    className="text-red-500 hover:text-red-700 text-xs px-1">✕</button>
+                                </>
+                              )}
                             </td>
                           )}
                         </tr>
@@ -859,6 +902,44 @@ export default function PaymentsPage() {
               </button>
               <button onClick={handleUpdatePayment} disabled={editAmount <= 0}
                 className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors disabled:opacity-50">
+                {t('app.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {editSettlement && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setEditSettlement(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('settlements.deletion')}</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('payments.amount')}</label>
+              <input type="number" value={editSettAmount || ''} onChange={e => setEditSettAmount(Number(e.target.value))} min={0}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('customers.fee_type')}</label>
+              <select value={editSettFeeType} onChange={e => setEditSettFeeType(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                {Object.entries(feeKeyLabels).map(([key, label]) => (
+                  <option key={key} value={key}>{t(label)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('app.reason')}</label>
+              <textarea value={editSettReason} onChange={e => setEditSettReason(e.target.value)}
+                rows={2} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none" />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setEditSettlement(null)}
+                className="flex-1 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 dark:bg-gray-600 text-sm transition-colors">
+                {t('app.cancel')}
+              </button>
+              <button onClick={handleUpdateSettlement}
+                className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors">
                 {t('app.save')}
               </button>
             </div>

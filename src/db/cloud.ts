@@ -775,6 +775,18 @@ export async function getClientSettlementsByClientId(clientId: string): Promise<
   } catch { return [] }
 }
 
+export async function deleteSettlement(id: string): Promise<void> {
+  try {
+    await getClient().from('client_settlements').delete().eq('id', id)
+  } catch { /* ignore */ }
+}
+
+export async function updateSettlement(id: string, payload: Partial<ClientSettlement>): Promise<ClientSettlement> {
+  const { data, error } = await getClient().from('client_settlements').update(payload).eq('id', id).select().single()
+  if (error) handleError('updateSettlement failed', error)
+  return data as ClientSettlement
+}
+
 export async function getAllSettlements(): Promise<ClientSettlement[]> {
   try {
     const { data, error } = await getClient().from('client_settlements').select('*').order('created_at', { ascending: false })

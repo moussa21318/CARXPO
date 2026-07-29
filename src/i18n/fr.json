@@ -18,7 +18,8 @@
     "select": "Sélectionner",
     "required": "Requis",
     "ok": "OK",
-    "view": "Voir"
+    "view": "Voir",
+    "reason": "Raison"
   },
   "nav": {
     "dashboard": "Tableau de bord",

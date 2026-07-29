@@ -18,7 +18,8 @@
     "select": "Select",
     "required": "Required",
     "ok": "OK",
-    "view": "View"
+    "view": "View",
+    "reason": "Reason"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -100,6 +101,7 @@
     "address_latin": "Address (Latin)",
     "postal_code": "Postal Code",
     "phone": "Phone",
+    "fee_type": "Fee Type",
     "email": "Email",
     "filter_stage": "Filter by Stage",
     "all_stages": "All Stages",
@@ -293,6 +295,7 @@
     "code": "Code",
     "name": "Name",
     "phone": "Phone",
+    "fee_type": "Fee Type",
     "created_at": "Created At",
     "search": "Search by name, phone or code",
     "cars_count": "Cars Count",
@@ -310,6 +313,7 @@
     "address": "Address",
     "postal_code": "Postal Code",
     "phone": "Phone",
+    "fee_type": "Fee Type",
     "email": "Email",
     "created_at": "Created At",
     "search": "Search by name, ID, phone or code",
