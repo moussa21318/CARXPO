@@ -9,7 +9,7 @@ import { formatPrice } from '../utils/format'
 export default function ClientCarDetails() {
   const { t } = useTranslation()
   const { id } = useParams()
-  const { clientId } = useAuth()
+  const { clientId, canEditCustomer } = useAuth()
 
   const [car, setCar] = useState<Car | null>(null)
   const [stageLogs, setStageLogs] = useState<CarStageLog[]>([])
@@ -118,6 +118,21 @@ export default function ClientCarDetails() {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold">{t('client_portal.edit_customer')}</h2>
+          {canEditCustomer && (
+            <button onClick={() => {
+              if (customer) {
+                setEditName(customer.full_name_latin); setEditNationalId(customer.national_id)
+                setEditAddress(customer.address_latin); setEditPostal(customer.postal_code)
+                setEditPhone(customer.phone); setEditEmail(customer.email)
+              } else {
+                setEditName(''); setEditNationalId(''); setEditAddress(''); setEditPostal(''); setEditPhone(''); setEditEmail('')
+              }
+              setCustomerModal(true)
+            }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+              ✎ {customer ? t('app.edit') : t('app.add')}
+            </button>
+          )}
         </div>
         {customer ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
