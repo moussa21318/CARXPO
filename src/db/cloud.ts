@@ -370,10 +370,16 @@ export async function getUserById(id: string): Promise<User | null> {
 
 export async function createUserForExistingClient(clientId: string, name: string): Promise<{ username: string; password: string }> {
   const lastCode = await getLastClientCode()
-  const code = generateNextClientCode(lastCode)
+  let code = generateNextClientCode(lastCode)
   const password = generateRandomPassword()
   const passwordHash = await hash(password)
-  const username = `client_${code}`
+  let username = `client_${code}`
+  while (true) {
+    const { data: existing } = await getClient().from('users').select('id').eq('username', username).maybeSingle()
+    if (!existing) break
+    code = generateNextClientCode(code)
+    username = `client_${code}`
+  }
   const { data: user, error: userErr } = await getClient().from('users').insert({
     username, password_hash: passwordHash, role: 'client', full_name: name, is_active: true,
   }).select().single()
