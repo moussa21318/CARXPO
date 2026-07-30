@@ -160,7 +160,7 @@ export default function PaymentsPage() {
       const fees = feeMap.get(car.id)
       if (!fees) continue
       for (const key of FEE_LABELS) {
-        const amount = fees[key] as number
+        const amount = Number(fees[key]) || 0
         if (amount <= 0) continue
         const dateKey = feeDateKeys[key]
         const date = (fees as any)[dateKey] as string | null

@@ -2,9 +2,27 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCar, getStageLogs, getAttachments, getCustomerPayments, getClientById, getCustomerById, updateCustomer, upsertCustomer, updateCar, notifyCustomerUpdated } from '../db/cloud'
-import { STAGE_ORDER, STAGE_LABELS, PAYMENT_METHOD_LABELS, type Car, type CarStageLog, type CarAttachment, type CustomerPayment, type Client, type Customer } from '../types'
+import { getCar, getStageLogs, getAttachments, getCustomerPayments, getClientById, getCustomerById, updateCustomer, upsertCustomer, updateCar, notifyCustomerUpdated, getCarFees } from '../db/cloud'
+import { STAGE_ORDER, STAGE_LABELS, PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type CarStageLog, type CarAttachment, type CustomerPayment, type Client, type Customer, type CarFees } from '../types'
 import { formatPrice } from '../utils/format'
+
+const feeKeyLabels: Record<string, string> = {
+  deposit: 'car.deposit_fee',
+  deposit_02: 'car.deposit_02',
+  transport_01: 'car.transport_01',
+  parking: 'car.parking',
+  other_fees: 'car.other_fees',
+  transport_02: 'car.transport_02',
+}
+
+const feeDateKeys: Record<string, string> = {
+  deposit: 'deposit_date',
+  deposit_02: 'deposit_02_date',
+  transport_01: 'transport_01_date',
+  parking: 'parking_date',
+  other_fees: 'other_fees_date',
+  transport_02: 'transport_02_date',
+}
 
 export default function ClientCarDetails() {
   const { t } = useTranslation()
@@ -17,6 +35,7 @@ export default function ClientCarDetails() {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [attachments, setAttachments] = useState<(CarAttachment & { publicUrl: string })[]>([])
   const [payments, setPayments] = useState<CustomerPayment[]>([])
+  const [carFees, setCarFees] = useState<CarFees | null>(null)
   const [loading, setLoading] = useState(true)
   const [customerModal, setCustomerModal] = useState(false)
   const [editName, setEditName] = useState('')
@@ -29,14 +48,15 @@ export default function ClientCarDetails() {
 
   const loadData = async () => {
     if (!id || !clientId) { setLoading(false); return }
-    const [c, logs, attach, pays] = await Promise.all([
-      getCar(id), getStageLogs(id), getAttachments(id), getCustomerPayments(id),
+    const [c, logs, attach, pays, fees] = await Promise.all([
+      getCar(id), getStageLogs(id), getAttachments(id), getCustomerPayments(id), getCarFees(id),
     ])
     if (!c || c.client_id !== clientId || c.deleted) { setLoading(false); return }
     setCar(c)
     setStageLogs(logs)
     setAttachments(attach.map(a => ({ ...a, publicUrl: '' })))
     setPayments(pays)
+    setCarFees(fees)
     if (c.client_id) getClientById(c.client_id).then(cl => setRequestClient(cl)).catch(() => {})
     getCustomerById(c.customer_id || '').then(cu => { setCustomer(cu); setEditName(cu?.full_name_latin || ''); setEditNationalId(cu?.national_id || ''); setEditAddress(cu?.address_latin || ''); setEditPostal(cu?.postal_code || ''); setEditPhone(cu?.phone || ''); setEditEmail(cu?.email || '') }).catch(() => {})
     setLoading(false)
@@ -175,6 +195,29 @@ export default function ClientCarDetails() {
                 <span className="text-gray-500 dark:text-gray-400">{t(PAYMENT_METHOD_LABELS[p.payment_method])}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {carFees && FEE_LABELS.some(k => (Number(carFees[k]) || 0) > 0) && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <h2 className="font-semibold mb-4">{t('car.fees')}</h2>
+          <div className="space-y-2">
+            {FEE_LABELS.map(key => {
+              const amount = Number(carFees[key]) || 0
+              if (amount <= 0) return null
+              const dateKey = feeDateKeys[key]
+              const date = (carFees as any)[dateKey] as string | null
+              return (
+                <div key={key} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm">
+                  <div>
+                    <span className="font-medium">{formatPrice(amount)}</span>
+                    {date && <span className="text-gray-500 dark:text-gray-400 mr-2">{new Date(date).toLocaleDateString()}</span>}
+                  </div>
+                  <span className="text-gray-500 dark:text-gray-400">{t(feeKeyLabels[key] || key)}</span>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
