@@ -124,7 +124,6 @@ export default function PaymentsPage() {
       const clientName = payment.client_id ? (clientMap.get(payment.client_id)?.name || '') : ''
       const car = payment.car_id ? carMap.get(payment.car_id) : null
       const isGeneral = !payment.car_id
-      const amount = Number(payment.amount) || 0
       rows.push({
         id: `pay-${payment.id}`,
         date: payment.payment_date,
@@ -135,8 +134,8 @@ export default function PaymentsPage() {
         carName: car?.name || null,
         designationKey: isGeneral ? 'payments.general_settlement' : 'payments.add',
         designation: '',
-        debit: amount < 0 ? -amount : 0,
-        credit: amount > 0 ? amount : 0,
+        debit: payment.amount < 0 ? -payment.amount : 0,
+        credit: payment.amount > 0 ? payment.amount : 0,
         paymentMethod: payment.payment_method,
         paymentNotes: payment.notes,
         paymentReceipt: payment.receipt_url || undefined,
@@ -175,8 +174,6 @@ export default function PaymentsPage() {
 
     for (const s of allSettlements) {
       const feeLabelKey = feeKeyLabels[s.fee_type as keyof typeof feeKeyLabels] || s.fee_type
-      const debit = Number(s.amount) || 0
-      if (debit <= 0) continue
       rows.push({
         id: `stl_${s.id}`,
         date: s.created_at.slice(0, 10),
@@ -187,7 +184,7 @@ export default function PaymentsPage() {
         carName: s.car_name || null,
         designationKey: 'settlements.deletion',
         designation: '',
-        debit,
+        debit: s.amount,
         credit: 0,
         isGeneral: false,
         sourceSettlement: s,
