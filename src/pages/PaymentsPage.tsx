@@ -80,6 +80,7 @@ export default function PaymentsPage() {
 
   const [exportDateFrom, setExportDateFrom] = useState('')
   const [exportDateTo, setExportDateTo] = useState('')
+  const [notesModal, setNotesModal] = useState<string | null>(null)
 
   const feeKeyLabels: Record<string, string> = {
     deposit: 'car.deposit_fee',
@@ -816,7 +817,20 @@ export default function PaymentsPage() {
                           {detailCols.map(c => {
                             let val: React.ReactNode = ''
                             if (c.key === 'date') val = <span className="whitespace-nowrap">{r.date}</span>
-                            else if (c.key === 'designation') val = r.designation
+                            else if (c.key === 'designation') {
+                              const n = r.paymentNotes || r.sourceSettlement?.reason || ''
+                              val = (
+                                <>
+                                  {r.designation}
+                                  {n && (
+                                    <button onClick={(e) => { e.stopPropagation(); setNotesModal(n) }}
+                                      className="mr-1 text-blue-500 hover:text-blue-700 text-xs align-middle">
+                                      🔍
+                                    </button>
+                                  )}
+                                </>
+                              )
+                            }
                             else if (c.key === 'debit') val = <span className="text-red-600 dark:text-red-400">{r.debit ? formatPrice(r.debit) : ''}</span>
                             else if (c.key === 'credit') val = <span className="text-green-600 dark:text-green-400">{r.credit ? formatPrice(r.credit) : ''}</span>
                             else if (c.key === 'avoir') val = <span className="font-semibold">{formatPrice(balance)}</span>
@@ -944,6 +958,20 @@ export default function PaymentsPage() {
                 {t('app.save')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {notesModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setNotesModal(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border-2 border-blue-200 dark:border-blue-700 w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('payments.notes')}</h2>
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{notesModal}</p>
+            <button onClick={() => setNotesModal(null)}
+              className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm transition-colors">
+              {t('app.close')}
+            </button>
           </div>
         </div>
       )}

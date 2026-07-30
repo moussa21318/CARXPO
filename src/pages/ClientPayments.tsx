@@ -33,11 +33,21 @@ const feeDateKeys: Record<string, string> = {
 }
 
 export default function ClientPayments() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { clientId } = useAuth()
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [notesModal, setNotesModal] = useState<string | null>(null)
+
+  const isRtl = i18n.language === 'ar'
+  const colDefs = [
+    { key: 'date', label: t('payments.date') },
+    { key: 'designation', label: t('payments.designation') },
+    { key: 'debit', label: t('payments.debit') },
+    { key: 'credit', label: t('payments.credit') },
+    { key: 'avoir', label: t('payments.avoir') },
+  ]
+  const displayCols = isRtl ? [...colDefs].reverse() : colDefs
 
   useEffect(() => {
     if (!clientId) { setLoading(false); return }
@@ -133,14 +143,12 @@ export default function ClientPayments() {
         <div className="text-center py-8 text-gray-400 dark:text-gray-500">{t('app.no_data')}</div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[500px]">
+          <table className="w-full min-w-[500px]" dir={isRtl ? 'rtl' : 'ltr'}>
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700">
               <tr>
-                <th className="p-3 text-right text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.date')}</th>
-                <th className="p-3 text-right text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.designation')}</th>
-                <th className="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.debit')}</th>
-                <th className="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.credit')}</th>
-                <th className="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-300">{t('payments.avoir')}</th>
+                {displayCols.map(c => (
+                  <th key={c.key} className="p-3 text-right text-sm font-medium text-gray-600 dark:text-gray-300">{c.label}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -148,19 +156,27 @@ export default function ClientPayments() {
                 running = running - r.debit + r.credit
                 return (
                   <tr key={r.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="p-3 text-right text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{r.date}</td>
-                    <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">
-                      {r.designation}
-                      {r.notes && (
-                        <button onClick={() => setNotesModal(r.notes!)}
-                          className="mr-1 text-blue-500 hover:text-blue-700 text-xs align-middle">
-                          🔍
-                        </button>
-                      )}
-                    </td>
-                    <td className="p-3 text-center text-sm text-red-600">{r.debit > 0 ? formatPrice(r.debit) : ''}</td>
-                    <td className="p-3 text-center text-sm text-green-600">{r.credit > 0 ? formatPrice(r.credit) : ''}</td>
-                    <td className="p-3 text-center text-sm font-mono text-gray-800 dark:text-gray-200">{formatPrice(running)}</td>
+                    {displayCols.map(c => {
+                      let val: React.ReactNode = ''
+                      if (c.key === 'date') val = r.date
+                      else if (c.key === 'designation') {
+                        val = (
+                          <>
+                            {r.designation}
+                            {r.notes && (
+                              <button onClick={() => setNotesModal(r.notes!)}
+                                className="mr-1 text-blue-500 hover:text-blue-700 text-xs align-middle">
+                                🔍
+                              </button>
+                            )}
+                          </>
+                        )
+                      }
+                      else if (c.key === 'debit') val = <span className="text-red-600 dark:text-red-400">{r.debit ? formatPrice(r.debit) : ''}</span>
+                      else if (c.key === 'credit') val = <span className="text-green-600 dark:text-green-400">{r.credit ? formatPrice(r.credit) : ''}</span>
+                      else if (c.key === 'avoir') val = <span className="font-semibold text-gray-800 dark:text-gray-200">{formatPrice(running)}</span>
+                      return <td key={c.key} className="p-3 text-right text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{val}</td>
+                    })}
                   </tr>
                 )
               })}
@@ -171,7 +187,7 @@ export default function ClientPayments() {
       {notesModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
              onClick={() => setNotesModal(null)}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border-2 border-blue-200 dark:border-blue-700 w-full sm:max-w-md p-5 sm:p-6 space-y-4"
                onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold">{t('payments.notes')}</h2>
             <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{notesModal}</p>
