@@ -70,20 +70,22 @@ export default function ClientPayments() {
       for (const p of payments) {
         const car = myCars.find(c => c.id === p.car_id)
         const label = p.car_id ? (car ? car.name : '') : t('payments.general_settlement')
+        const amount = Number(p.amount) || 0
         result.push({
           date: p.payment_date.slice(0, 10),
           designation: label ? `${label} - ${t(PAYMENT_METHOD_LABELS[p.payment_method])}` : t(PAYMENT_METHOD_LABELS[p.payment_method]),
-          debit: 0,
-          credit: p.amount,
+          debit: amount < 0 ? -amount : 0,
+          credit: amount > 0 ? amount : 0,
           id: `pay_${p.id}`,
         })
       }
 
       for (const s of settlements) {
+        const amount = Number(s.amount) || 0
         result.push({
           date: s.created_at.slice(0, 10),
           designation: `تسوية حذف: ${s.car_name || ''} - ${s.fee_type}`,
-          debit: s.amount,
+          debit: amount < 0 ? -amount : amount,
           credit: 0,
           id: `stl_${s.id}`,
         })

@@ -174,6 +174,7 @@ export default function PaymentsPage() {
 
     for (const s of allSettlements) {
       const feeLabelKey = feeKeyLabels[s.fee_type as keyof typeof feeKeyLabels] || s.fee_type
+      const amount = Number(s.amount) || 0
       rows.push({
         id: `stl_${s.id}`,
         date: s.created_at.slice(0, 10),
@@ -184,7 +185,7 @@ export default function PaymentsPage() {
         carName: s.car_name || null,
         designationKey: 'settlements.deletion',
         designation: '',
-        debit: s.amount,
+        debit: amount < 0 ? -amount : amount,
         credit: 0,
         isGeneral: false,
         sourceSettlement: s,
