@@ -11,6 +11,7 @@ interface Row {
   debit: number
   credit: number
   id: string
+  notes?: string
 }
 
 const feeKeyLabels: Record<string, string> = {
@@ -36,6 +37,7 @@ export default function ClientPayments() {
   const { clientId } = useAuth()
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
+  const [notesModal, setNotesModal] = useState<string | null>(null)
 
   useEffect(() => {
     if (!clientId) { setLoading(false); return }
@@ -77,6 +79,7 @@ export default function ClientPayments() {
           debit: amount < 0 ? -amount : 0,
           credit: amount > 0 ? amount : 0,
           id: `pay_${p.id}`,
+          notes: p.notes || '',
         })
       }
 
@@ -88,6 +91,7 @@ export default function ClientPayments() {
           debit: amount < 0 ? -amount : amount,
           credit: 0,
           id: `stl_${s.id}`,
+          notes: s.reason || '',
         })
       }
 
@@ -145,7 +149,15 @@ export default function ClientPayments() {
                 return (
                   <tr key={r.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="p-3 text-right text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{r.date}</td>
-                    <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">{r.designation}</td>
+                    <td className="p-3 text-right text-sm text-gray-700 dark:text-gray-300">
+                      {r.designation}
+                      {r.notes && (
+                        <button onClick={() => setNotesModal(r.notes!)}
+                          className="mr-1 text-blue-500 hover:text-blue-700 text-xs align-middle">
+                          🔍
+                        </button>
+                      )}
+                    </td>
                     <td className="p-3 text-center text-sm text-red-600">{r.debit > 0 ? formatPrice(r.debit) : ''}</td>
                     <td className="p-3 text-center text-sm text-green-600">{r.credit > 0 ? formatPrice(r.credit) : ''}</td>
                     <td className="p-3 text-center text-sm font-mono text-gray-800 dark:text-gray-200">{formatPrice(running)}</td>
@@ -154,6 +166,20 @@ export default function ClientPayments() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+      {notesModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+             onClick={() => setNotesModal(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
+               onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">{t('payments.notes')}</h2>
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{notesModal}</p>
+            <button onClick={() => setNotesModal(null)}
+              className="w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm transition-colors">
+              {t('app.close')}
+            </button>
+          </div>
         </div>
       )}
     </div>
