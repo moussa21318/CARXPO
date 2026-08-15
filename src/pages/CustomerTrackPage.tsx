@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   findCarBySerialNumber, verifyCustomerPassword, getCar, getCustomerById,
@@ -166,10 +165,6 @@ export default function CustomerTrackPage() {
               {checking ? t('app.loading') : t('customer_track.login')}
             </button>
           </form>
-          <Link to="/login"
-            className="block text-center w-full border-2 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg py-2.5 mt-3 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            {t('customer_track.back_to_main')}
-          </Link>
           <div className="flex justify-center gap-2 mt-6">
             {(['ar', 'fr', 'en'] as const).map(lang => (
               <button key={lang} onClick={() => { i18n.changeLanguage(lang); localStorage.setItem(storageKey('lang'), lang) }}
