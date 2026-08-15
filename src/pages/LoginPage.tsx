@@ -52,7 +52,7 @@ export default function LoginPage() {
           ))}
         </div>
         <Link to="/customer-form"
-          className="block text-center text-sm text-blue-600 dark:text-blue-400 hover:underline mt-4">
+          className="block text-center w-full border-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 rounded-lg py-2.5 mt-4 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
           {t('customer_track.track_btn')}
         </Link>
       </div>
