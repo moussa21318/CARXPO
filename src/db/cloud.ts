@@ -425,18 +425,71 @@ export async function getCustomerById(id: string): Promise<Customer | null> {
   } catch { return null }
 }
 
-export async function upsertCustomer(fullNameLatin: string, nationalId: string, addressLatin: string, postalCode: string, phone: string, email: string = ''): Promise<Customer> {
+export async function upsertCustomer(fullNameLatin: string, nationalId: string, addressLatin: string, postalCode: string, phone: string, email: string = ''): Promise<{ customer: Customer; password: string | null }> {
   const { data: existing } = await getClient().from('customers').select('*').eq('full_name_latin', fullNameLatin).eq('national_id', nationalId).maybeSingle()
   if (existing) {
+    if (!existing.password_hash) {
+      const password = generateRandomPassword()
+      const passwordHash = await hash(password)
+      const { data, error } = await getClient().from('customers').update({ address_latin: addressLatin, postal_code: postalCode, phone, email, password_hash: passwordHash }).eq('id', existing.id).select().single()
+      if (error) handleError('upsertCustomer update failed', error)
+      return { customer: data as Customer, password }
+    }
     const { data, error } = await getClient().from('customers').update({ address_latin: addressLatin, postal_code: postalCode, phone, email }).eq('id', existing.id).select().single()
     if (error) handleError('upsertCustomer update failed', error)
-    return data as Customer
+    return { customer: data as Customer, password: null }
   }
   const lastCode = await getLastCustomerCode()
   const code = generateNextClientCode(lastCode)
-  const { data, error } = await getClient().from('customers').insert({ full_name_latin: fullNameLatin, national_id: nationalId, address_latin: addressLatin, postal_code: postalCode, phone, email, code }).select().single()
+  const password = generateRandomPassword()
+  const passwordHash = await hash(password)
+  const { data, error } = await getClient().from('customers').insert({ full_name_latin: fullNameLatin, national_id: nationalId, address_latin: addressLatin, postal_code: postalCode, phone, email, code, password_hash: passwordHash }).select().single()
   if (error) handleError('upsertCustomer insert failed', error)
-  return data as Customer
+  return { customer: data as Customer, password }
+}
+
+export async function resetCustomerPassword(customerId: string): Promise<string> {
+  const password = generateRandomPassword()
+  const passwordHash = await hash(password)
+  const { error } = await getClient().from('customers').update({ password_hash: passwordHash }).eq('id', customerId)
+  if (error) handleError('resetCustomerPassword failed', error)
+  return password
+}
+
+export async function ensureCustomerPassword(customerId: string): Promise<string | null> {
+  try {
+    const customer = await getCustomerById(customerId)
+    if (customer?.password_hash) return null
+    const password = generateRandomPassword()
+    const passwordHash = await hash(password)
+    const { error } = await getClient().from('customers').update({ password_hash: passwordHash }).eq('id', customerId)
+    if (error) handleError('ensureCustomerPassword failed', error)
+    return password
+  } catch { return null }
+}
+
+export async function verifyCustomerPassword(customerId: string, password: string): Promise<boolean> {
+  try {
+    const customer = await getCustomerById(customerId)
+    if (!customer?.password_hash) return false
+    return await verify(password, customer.password_hash)
+  } catch { return false }
+}
+
+export async function findCarBySerialNumber(serialNumber: string): Promise<Car | null> {
+  try {
+    const { data, error } = await getClient().from('cars').select('*').eq('serial_number', serialNumber).eq('deleted', false).maybeSingle()
+    if (error) return null
+    return data as Car | null
+  } catch { return null }
+}
+
+export async function getCarsByCustomerId(customerId: string): Promise<Car[]> {
+  try {
+    const { data, error } = await getClient().from('cars').select('*').eq('customer_id', customerId).eq('deleted', false).order('created_at', { ascending: false })
+    if (error) return []
+    return (data as Car[]) || []
+  } catch { return [] }
 }
 
 export async function updateCustomer(id: string, payload: Partial<Customer>): Promise<Customer> {

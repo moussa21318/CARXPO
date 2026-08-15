@@ -319,7 +319,13 @@
     "created_at": "Created At",
     "search": "Search by name, ID, phone or code",
     "cars_count": "Cars Count",
-    "no_data": "No final customers found"
+    "no_data": "No final customers found",
+    "password": "Password",
+    "reset_password": "Reset Password",
+    "set_password": "Generate Password",
+    "linked_cars": "Linked Cars",
+    "serial": "Serial Number",
+    "no_linked_cars": "No linked cars"
   },
   "client_portal": {
     "title": "Client Portal",
@@ -346,5 +352,22 @@
     "password_changed": "Password changed successfully",
     "password_mismatch": "Passwords do not match",
     "wrong_password": "Current password is incorrect"
+  },
+  "customer_track": {
+    "title": "Car Status Tracking",
+    "subtitle": "Enter your car's serial number and password to check its status",
+    "serial_label": "Car Serial Number",
+    "password_label": "Password",
+    "login": "Check",
+    "logout": "Logout",
+    "not_found": "No car found with this serial number",
+    "no_account": "No account has been created for this car yet. Please contact your agent.",
+    "wrong_password": "Incorrect password",
+    "stage": "Car Stage",
+    "images": "Car Photos",
+    "your_info": "Your Personal Information",
+    "save_success": "Your information has been saved successfully",
+    "footer": "You can only view your car's stage, its photos and update your personal information.",
+    "track_btn": "Track Your Car"
   }
 }

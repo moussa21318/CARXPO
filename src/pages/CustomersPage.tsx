@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { getAllCustomers, upsertCustomer, updateCustomer, deleteCustomer, getCars } from '../db/cloud'
-import type { Customer } from '../types'
+import { getAllCustomers, upsertCustomer, updateCustomer, deleteCustomer, getCars, resetCustomerPassword, getCarsByCustomerId } from '../db/cloud'
+import type { Customer, Car } from '../types'
 
 export default function CustomersPage() {
   const { t } = useTranslation()
@@ -19,6 +19,16 @@ export default function CustomersPage() {
   const [modalPhone, setModalPhone] = useState('')
   const [modalEmail, setModalEmail] = useState('')
   const [saving, setSaving] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
+  const [credModal, setCredModal] = useState<{ customer: Customer; password: string; cars: Car[] } | null>(null)
+
+  const handleCopy = async (text: string, key: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(key)
+      setTimeout(() => setCopied(null), 1500)
+    } catch { /* ignore */ }
+  }
 
   const loadCustomers = async () => {
     const [cl, cars] = await Promise.all([getAllCustomers(), getCars()])
@@ -47,11 +57,25 @@ export default function CustomersPage() {
       if (editId) {
         await updateCustomer(editId, { full_name_latin: modalName.trim(), national_id: modalNationalId.trim(), address_latin: modalAddress, postal_code: modalPostal, phone: modalPhone, email: modalEmail })
       } else {
-        await upsertCustomer(modalName.trim(), modalNationalId.trim(), modalAddress, modalPostal, modalPhone, modalEmail)
+        const { customer, password } = await upsertCustomer(modalName.trim(), modalNationalId.trim(), modalAddress, modalPostal, modalPhone, modalEmail)
+        if (password) {
+          const cars = await getCarsByCustomerId(customer.id)
+          setCredModal({ customer, password, cars })
+        }
       }
       setModalOpen(false)
       await loadCustomers()
-    } catch { /* ignore */ }
+    } catch (e) { alert('خطأ: ' + ((e as any)?.message || String(e))) }
+    setSaving(false)
+  }
+
+  const handleSetPassword = async (c: Customer) => {
+    setSaving(true)
+    try {
+      const password = await resetCustomerPassword(c.id)
+      const cars = await getCarsByCustomerId(c.id)
+      setCredModal({ customer: c, password, cars })
+    } catch (e) { alert('خطأ: ' + (e instanceof Error ? e.message : String(e))) }
     setSaving(false)
   }
 
@@ -114,6 +138,8 @@ export default function CustomersPage() {
                     </button>
                   </td>
                   <td className="p-3 text-center text-sm whitespace-nowrap">
+                    <button onClick={() => handleSetPassword(c)}
+                      className="text-orange-500 hover:text-orange-700 text-xs px-1" title={t('customers.reset_password')}>🔑</button>
                     <button onClick={() => openEdit(c)}
                       className="text-blue-500 hover:text-blue-700 text-xs px-1">✎</button>
                     <button onClick={() => handleDelete(c)}
@@ -131,8 +157,7 @@ export default function CustomersPage() {
              onClick={() => setModalOpen(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4"
                onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold">{editId ? t('customers.edit') : t('customers.add')}</h2>
-            <div>
+            <h2 className="text-lg font-semibold">{editId ? t('customers.edit') : t('customers.add')}</h2>            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('customers.name')} <span className="text-red-500">*</span></label>
               <input value={modalName} onChange={e => setModalName(e.target.value)}
                 className="w-full p-3 border dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -172,6 +197,49 @@ export default function CustomersPage() {
                 {saving ? t('app.loading') : t('app.save')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {credModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-green-700 dark:text-green-400">{t('client_portal.credentials_modal_title')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('client_portal.credentials_for', { name: credModal.customer.full_name_latin })}</p>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
+              <div className="flex justify-between text-sm items-center">
+                <span className="text-gray-500 dark:text-gray-400">{t('client_portal.password_label')}:</span>
+                <span className="font-mono font-medium flex items-center gap-2" dir="ltr">
+                  {credModal.password}
+                  <button onClick={() => handleCopy(credModal.password, 'cred-pwd')}
+                    className="text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                    {copied === 'cred-pwd' ? '✓' : t('app.copy')}
+                  </button>
+                </span>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t('customers.linked_cars')}</p>
+              {credModal.cars.length === 0 ? (
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t('customers.no_linked_cars')}</p>
+              ) : (
+                <div className="space-y-1">
+                  {credModal.cars.map(car => (
+                    <div key={car.id} className="flex justify-between text-sm">
+                      <span className="text-gray-700 dark:text-gray-300">{car.name}</span>
+                      <span className="text-gray-500 dark:text-gray-400" dir="ltr">
+                        {t('customers.serial')}: {car.serial_number || '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-orange-600 dark:text-orange-400">{t('client_portal.save_credentials')}</p>
+            <button onClick={() => setCredModal(null)}
+              className="w-full p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors">
+              {t('app.ok')}
+            </button>
           </div>
         </div>
       )}

@@ -38,6 +38,7 @@ export default function CarDetails() {
   const [newCustPhone, setNewCustPhone] = useState('')
   const [newCustEmail, setNewCustEmail] = useState('')
   const [addingCustomer, setAddingCustomer] = useState(false)
+  const [credModal, setCredModal] = useState<{ password: string; serial: string } | null>(null)
   const [attachments, setAttachments] = useState<(CarAttachment & { publicUrl: string })[]>([])
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
   const [evidencePublicUrl, setEvidencePublicUrl] = useState('')
@@ -194,11 +195,15 @@ const [modalColor, setModalColor] = useState('')
     if (!newCustName.trim() || !newCustNationalId.trim()) return
     setAddingCustomer(true)
     try {
-      const cust = await upsertCustomer(newCustName.trim(), newCustNationalId.trim(), newCustAddress, newCustPostal, newCustPhone, newCustEmail)
+      const { customer: cust, password } = await upsertCustomer(newCustName.trim(), newCustNationalId.trim(), newCustAddress, newCustPostal, newCustPhone, newCustEmail)
       setCustomerAddMode(false)
       setCustomerModalOpen(false)
       if (cust && id) {
         await updateCar(id, { customer_id: cust.id })
+        if (password) {
+          const c = await getCar(id)
+          setCredModal({ password, serial: c?.serial_number || '' })
+        }
         loadData()
       }
     } catch { /* ignore */ }
@@ -207,7 +212,7 @@ const [modalColor, setModalColor] = useState('')
 
   const handleSaveCustomer = async () => {
     if (!id || !user) return
-    const cust = await upsertCustomer(
+    const { customer: cust, password } = await upsertCustomer(
       customerData.full_name_latin || '',
       customerData.national_id || '',
       customerData.address_latin || '',
@@ -217,6 +222,10 @@ const [modalColor, setModalColor] = useState('')
     )
     if (cust) {
       await updateCar(id, { customer_id: cust.id })
+    }
+    if (password) {
+      const c = await getCar(id)
+      setCredModal({ password, serial: c?.serial_number || '' })
     }
     loadData()
   }
@@ -851,6 +860,36 @@ const [modalColor, setModalColor] = useState('')
                 {addingCustomer ? t('app.loading') : t('app.save')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {credModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-green-700 dark:text-green-400">{t('client_portal.credentials_modal_title')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t('customer_track.serial_label')}: <span className="font-mono" dir="ltr">{credModal.serial || '—'}</span>
+            </p>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
+              <div className="flex justify-between text-sm items-center">
+                <span className="text-gray-500 dark:text-gray-400">{t('client_portal.password_label')}:</span>
+                <span className="font-mono font-medium flex items-center gap-2" dir="ltr">
+                  {credModal.password}
+                  <button onClick={async () => {
+                    try { await navigator.clipboard.writeText(credModal.password) } catch { /* ignore */ }
+                  }}
+                    className="text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                    {t('app.copy')}
+                  </button>
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-orange-600 dark:text-orange-400">{t('client_portal.save_credentials')}</p>
+            <button onClick={() => setCredModal(null)}
+              className="w-full p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors">
+              {t('app.ok')}
+            </button>
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { getCar, getStageLogs, getAttachments, getCustomerPayments, getClientById, getCustomerById, updateCustomer, upsertCustomer, updateCar, notifyCustomerUpdated, getCarFees } from '../db/cloud'
+import { getCar, getStageLogs, getAttachments, getCustomerPayments, getClientById, getCustomerById, updateCustomer, upsertCustomer, updateCar, notifyCustomerUpdated, getCarFees, ensureCustomerPassword, resetCustomerPassword } from '../db/cloud'
 import { STAGE_ORDER, STAGE_LABELS, PAYMENT_METHOD_LABELS, FEE_LABELS, type Car, type CarStageLog, type CarAttachment, type CustomerPayment, type Client, type Customer, type CarFees } from '../types'
 import { formatPrice } from '../utils/format'
 
@@ -45,6 +45,7 @@ export default function ClientCarDetails() {
   const [editPhone, setEditPhone] = useState('')
   const [editEmail, setEditEmail] = useState('')
   const [saving, setSaving] = useState(false)
+  const [credModal, setCredModal] = useState<{ password: string; serial: string } | null>(null)
 
   const loadData = async () => {
     if (!id || !clientId) { setLoading(false); return }
@@ -68,21 +69,37 @@ export default function ClientCarDetails() {
     if (!editName.trim() || !editNationalId.trim() || saving || !car) return
     setSaving(true)
     try {
+      let generatedPassword: string | null = null
       let custId = car.customer_id
       if (!custId) {
-        const newCust = await upsertCustomer(editName.trim(), editNationalId.trim(), editAddress, editPostal, editPhone, editEmail)
+        const { customer: newCust, password } = await upsertCustomer(editName.trim(), editNationalId.trim(), editAddress, editPostal, editPhone, editEmail)
         custId = newCust.id
+        generatedPassword = password
         await updateCar(car.id, { customer_id: custId })
       } else {
         await updateCustomer(custId, {
           full_name_latin: editName.trim(), national_id: editNationalId.trim(),
           address_latin: editAddress, postal_code: editPostal, phone: editPhone, email: editEmail,
         })
+        generatedPassword = await ensureCustomerPassword(custId)
       }
       notifyCustomerUpdated(car.id, car.name, requestClient?.name || '')
+      if (generatedPassword) {
+        setCredModal({ password: generatedPassword, serial: car.serial_number || '' })
+      }
       setCustomerModal(false)
       loadData()
     } catch (e) { alert('خطأ: ' + ((e as any)?.message || String(e))) }
+    setSaving(false)
+  }
+
+  const handleResetCustomerPassword = async () => {
+    if (!customer || !car) return
+    setSaving(true)
+    try {
+      const password = await resetCustomerPassword(customer.id)
+      setCredModal({ password, serial: car.serial_number || '' })
+    } catch (e) { alert('خطأ: ' + (e instanceof Error ? e.message : String(e))) }
     setSaving(false)
   }
 
@@ -139,7 +156,14 @@ export default function ClientCarDetails() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold">{t('client_portal.edit_customer')}</h2>
           {canEditCustomer && (
-            <button onClick={() => {
+            <div className="flex items-center gap-2">
+              {customer && (
+                <button onClick={handleResetCustomerPassword}
+                  className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 text-sm" title={t('client_portal.reset_password')}>
+                  🔑 {t('client_portal.reset_password')}
+                </button>
+              )}
+              <button onClick={() => {
               if (customer) {
                 setEditName(customer.full_name_latin); setEditNationalId(customer.national_id)
                 setEditAddress(customer.address_latin); setEditPostal(customer.postal_code)
@@ -152,6 +176,7 @@ export default function ClientCarDetails() {
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
               ✎ {customer ? t('app.edit') : t('app.add')}
             </button>
+            </div>
           )}
         </div>
         {customer ? (
@@ -285,6 +310,36 @@ export default function ClientCarDetails() {
                 {saving ? t('app.loading') : t('app.save')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {credModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full sm:max-w-md p-5 sm:p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-green-700 dark:text-green-400">{t('client_portal.credentials_modal_title')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t('customer_track.serial_label')}: <span className="font-mono" dir="ltr">{credModal.serial || '—'}</span>
+            </p>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
+              <div className="flex justify-between text-sm items-center">
+                <span className="text-gray-500 dark:text-gray-400">{t('client_portal.password_label')}:</span>
+                <span className="font-mono font-medium flex items-center gap-2" dir="ltr">
+                  {credModal.password}
+                  <button onClick={async () => {
+                    try { await navigator.clipboard.writeText(credModal.password) } catch { /* ignore */ }
+                  }}
+                    className="text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                    {t('app.copy')}
+                  </button>
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-orange-600 dark:text-orange-400">{t('client_portal.save_credentials')}</p>
+            <button onClick={() => setCredModal(null)}
+              className="w-full p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors">
+              {t('app.ok')}
+            </button>
           </div>
         </div>
       )}
