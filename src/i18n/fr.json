@@ -365,7 +365,6 @@
     "your_info": "Vos informations personnelles",
     "save_success": "Vos informations ont été enregistrées avec succès",
     "footer": "Vous pouvez uniquement consulter l'étape de votre voiture, ses photos et mettre à jour vos informations personnelles.",
-    "track_btn": "Suivre votre voiture",
-    "back_to_main": "Retour à la page normale"
+    "track_btn": "Suivre votre voiture"
   }
 }
