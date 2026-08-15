@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { storageKey } from '../config/app'
@@ -51,10 +51,6 @@ export default function LoginPage() {
             </button>
           ))}
         </div>
-        <Link to="/customer-form"
-          className="block text-center text-sm text-blue-600 dark:text-blue-400 hover:underline mt-4">
-          {t('customer_track.track_btn')}
-        </Link>
       </div>
     </div>
   )

@@ -48,7 +48,6 @@ CREATE TABLE customers (
   postal_code TEXT NOT NULL,
   phone TEXT NOT NULL,
   email TEXT DEFAULT '',
-  password_hash TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -239,7 +238,6 @@ CREATE INDEX IF NOT EXISTS idx_cars_created_at ON cars(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_cars_client_id ON cars(client_id);
 CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id);
 CREATE INDEX IF NOT EXISTS idx_cars_customer_id ON cars(customer_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_cars_serial_number ON cars(serial_number) WHERE serial_number IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_car_stage_logs_car_id ON car_stage_logs(car_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
@@ -247,9 +245,6 @@ CREATE INDEX IF NOT EXISTS idx_customer_payments_car_id ON customer_payments(car
 CREATE INDEX IF NOT EXISTS idx_customer_payments_client_id ON customer_payments(client_id);
 CREATE INDEX IF NOT EXISTS idx_client_settlements_client_id ON client_settlements(client_id);
 CREATE INDEX IF NOT EXISTS idx_client_settlements_car_id ON client_settlements(car_id);
-
--- Customer tracking access password (added for existing databases)
-ALTER TABLE customers ADD COLUMN IF NOT EXISTS password_hash TEXT;
 
 -- Disable RLS on all tables (app uses custom auth, not supabase auth)
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;

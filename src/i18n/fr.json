@@ -316,13 +316,7 @@
     "created_at": "Date d'ajout",
     "search": "Rechercher par nom, ID, téléphone ou code",
     "cars_count": "Nombre de voitures",
-    "no_data": "Aucun client final trouvé",
-    "password": "Mot de passe",
-    "reset_password": "Réinitialiser le mot de passe",
-    "set_password": "Générer le mot de passe",
-    "linked_cars": "Voitures liées",
-    "serial": "N° de série",
-    "no_linked_cars": "Aucune voiture liée"
+    "no_data": "Aucun client final trouvé"
   },
   "client_portal": {
     "title": "Portail Client",
@@ -349,22 +343,5 @@
     "password_changed": "Mot de passe modifié avec succès",
     "password_mismatch": "Les mots de passe ne correspondent pas",
     "wrong_password": "Le mot de passe actuel est incorrect"
-  },
-  "customer_track": {
-    "title": "Suivi de la voiture",
-    "subtitle": "Saisissez le numéro de série de la voiture et le mot de passe pour vérifier l'état de votre voiture",
-    "serial_label": "Numéro de série de la voiture",
-    "password_label": "Mot de passe",
-    "login": "Vérifier",
-    "logout": "Déconnexion",
-    "not_found": "Aucune voiture trouvée avec ce numéro de série",
-    "no_account": "Aucun compte n'a été créé pour cette voiture. Veuillez contacter votre agent.",
-    "wrong_password": "Mot de passe incorrect",
-    "stage": "Étape de la voiture",
-    "images": "Photos de la voiture",
-    "your_info": "Vos informations personnelles",
-    "save_success": "Vos informations ont été enregistrées avec succès",
-    "footer": "Vous pouvez uniquement consulter l'étape de votre voiture, ses photos et mettre à jour vos informations personnelles.",
-    "track_btn": "Suivre votre voiture"
   }
 }

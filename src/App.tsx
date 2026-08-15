@@ -21,7 +21,6 @@ import ClientCarsList from './pages/ClientCarsList'
 import ClientCarDetails from './pages/ClientCarDetails'
 import ClientAccount from './pages/ClientAccount'
 import ClientPayments from './pages/ClientPayments'
-import CustomerTrackPage from './pages/CustomerTrackPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -37,7 +36,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
-      <Route path="/customer-form" element={<CustomerTrackPage />} />
       {isClient ? (
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/" element={<ClientDashboard />} />

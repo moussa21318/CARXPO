@@ -89,7 +89,6 @@ export interface Customer {
   postal_code: string
   phone: string
   email: string
-  password_hash?: string | null
   created_at: string
 }
 
